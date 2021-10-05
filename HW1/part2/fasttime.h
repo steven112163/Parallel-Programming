@@ -67,29 +67,30 @@ typedef struct timespec fasttime_t;
 
 // Return the current time.
 static inline fasttime_t gettime(void) {
-  struct timespec s;
+    struct timespec s;
 #ifdef NDEBUG
-  clock_gettime(CLOCK_MONOTONIC, &s);
+    clock_gettime(CLOCK_MONOTONIC, &s);
 #else
-  int r = clock_gettime(CLOCK_MONOTONIC, &s);
-  assert(r == 0);
+    int r = clock_gettime(CLOCK_MONOTONIC, &s);
+    assert(r == 0);
 #endif
-  return s;
+    return s;
 }
 
 // Return the time different between the start and the end, as a float
 // in units of seconds.  This function does not need to be fast.
 static inline double tdiff(fasttime_t start, fasttime_t end) {
-  return end.tv_sec - start.tv_sec + 1e-9*(end.tv_nsec - start.tv_nsec);
+    return end.tv_sec - start.tv_sec + 1e-9 * (end.tv_nsec - start.tv_nsec);
 }
 
 static inline unsigned int random_seed_from_clock(void) {
-  fasttime_t now = gettime();
-  return now.tv_sec + now.tv_nsec;
+    fasttime_t now = gettime();
+    return now.tv_sec + now.tv_nsec;
 }
 
 // Poison these symbols to help find portability problems.
 int clock_gettime(clockid_t, struct timespec *) __attribute__((deprecated));
+
 time_t time(time_t *) __attribute__((deprecated));
 
 #endif  // LINUX

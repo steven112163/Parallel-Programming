@@ -11,13 +11,14 @@
 
 extern Logger PPLogger;
 
-template <typename T>
+template<typename T>
 struct __pp_vec {
-  T value[VECTOR_WIDTH];
+    T value[VECTOR_WIDTH];
 };
 
 // Declare a mask with __pp_mask
-struct __pp_mask : __pp_vec<bool> {};
+struct __pp_mask : __pp_vec<bool> {
+};
 
 // Declare a floating point vector register with __pp_vec_float
 #define __pp_vec_float __pp_vec<float>
@@ -47,65 +48,78 @@ int _pp_cntbits(__pp_mask &maska);
 // Set register to value if vector lane is active
 //  otherwise keep the old value
 void _pp_vset_float(__pp_vec_float &vecResult, float value, __pp_mask &mask);
+
 void _pp_vset_int(__pp_vec_int &vecResult, int value, __pp_mask &mask);
 // For user's convenience, returns a vector register with all lanes initialized to value
 __pp_vec_float _pp_vset_float(float value);
+
 __pp_vec_int _pp_vset_int(int value);
 
 // Copy values from vector register src to vector register dest if vector lane active
 // otherwise keep the old value
 void _pp_vmove_float(__pp_vec_float &dest, __pp_vec_float &src, __pp_mask &mask);
+
 void _pp_vmove_int(__pp_vec_int &dest, __pp_vec_int &src, __pp_mask &mask);
 
 // Load values from array src to vector register dest if vector lane active
 //  otherwise keep the old value
-void _pp_vload_float(__pp_vec_float &dest, float* src, __pp_mask &mask);
-void _pp_vload_int(__pp_vec_int &dest, int* src, __pp_mask &mask);
+void _pp_vload_float(__pp_vec_float &dest, float *src, __pp_mask &mask);
+
+void _pp_vload_int(__pp_vec_int &dest, int *src, __pp_mask &mask);
 
 // Store values from vector register src to array dest if vector lane active
 //  otherwise keep the old value
-void _pp_vstore_float(float* dest, __pp_vec_float &src, __pp_mask &mask);
-void _pp_vstore_int(int* dest, __pp_vec_int &src, __pp_mask &mask);
+void _pp_vstore_float(float *dest, __pp_vec_float &src, __pp_mask &mask);
+
+void _pp_vstore_int(int *dest, __pp_vec_int &src, __pp_mask &mask);
 
 // Return calculation of (veca + vecb) if vector lane active
 //  otherwise keep the old value
 void _pp_vadd_float(__pp_vec_float &vecResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask);
+
 void _pp_vadd_int(__pp_vec_int &vecResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask);
 
 // Return calculation of (veca - vecb) if vector lane active
 //  otherwise keep the old value
 void _pp_vsub_float(__pp_vec_float &vecResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask);
+
 void _pp_vsub_int(__pp_vec_int &vecResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask);
 
 // Return calculation of (veca * vecb) if vector lane active
 //  otherwise keep the old value
 void _pp_vmult_float(__pp_vec_float &vecResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask);
+
 void _pp_vmult_int(__pp_vec_int &vecResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask);
 
 // Return calculation of (veca / vecb) if vector lane active
 //  otherwise keep the old value
 void _pp_vdiv_float(__pp_vec_float &vecResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask);
+
 void _pp_vdiv_int(__pp_vec_int &vecResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask);
 
 
 // Return calculation of absolute value abs(veca) if vector lane active
 //  otherwise keep the old value
 void _pp_vabs_float(__pp_vec_float &vecResult, __pp_vec_float &veca, __pp_mask &mask);
+
 void _pp_vabs_int(__pp_vec_int &vecResult, __pp_vec_int &veca, __pp_mask &mask);
 
 // Return a mask of (veca > vecb) if vector lane active
 //  otherwise keep the old value
 void _pp_vgt_float(__pp_mask &vecResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask);
+
 void _pp_vgt_int(__pp_mask &vecResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask);
 
 // Return a mask of (veca < vecb) if vector lane active
 //  otherwise keep the old value
 void _pp_vlt_float(__pp_mask &vecResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask);
+
 void _pp_vlt_int(__pp_mask &vecResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask);
 
 // Return a mask of (veca == vecb) if vector lane active
 //  otherwise keep the old value
 void _pp_veq_float(__pp_mask &vecResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask);
+
 void _pp_veq_int(__pp_mask &vecResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask);
 
 // Adds up adjacent pairs of elements, so
@@ -118,6 +132,6 @@ void _pp_hadd_float(__pp_vec_float &vecResult, __pp_vec_float &vec);
 void _pp_interleave_float(__pp_vec_float &vecResult, __pp_vec_float &vec);
 
 // Add a customized log to help debugging
-void addUserLog(const char * logStr);
+void addUserLog(const char *logStr);
 
 #endif
