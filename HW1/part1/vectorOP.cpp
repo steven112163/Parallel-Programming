@@ -82,7 +82,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
         // Get count
         _pp_vsub_int(count, y, int_one, maskAll); // count = y - 1;
         // Get new non-zero mask
-        _pp_vgt_int(maskIsNotZero, count, zero, maskIsNotZero);
+        _pp_vgt_int(maskIsNotZero, count, zero, maskAll);
         // While loop
         while (_pp_cntbits(maskIsNotZero) > 0) { // while (count > 0) {
             // Multiply result by x
@@ -90,7 +90,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
             // Subtract count by 1
             _pp_vsub_int(count, count, int_one, maskAll); // count--;
             // Get new non-zero mask
-            _pp_vgt_int(maskIsNotZero, count, zero, maskIsNotZero);
+            _pp_vgt_int(maskIsNotZero, count, zero, maskAll);
         }
         // Set mask according to predicate
         _pp_vgt_float(maskGtNine, result, nine, maskAll); // if (result > 9.999999f) {
@@ -125,17 +125,17 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
         // Move x to result
         _pp_vmove_float(result, x, maskIsNotZero); // result = x;
         // Get count
-        _pp_vsub_int(count, y, int_one, maskIsNotZero); // count = y - 1;
+        _pp_vsub_int(count, y, int_one, maskPart); // count = y - 1;
         // Get new non-zero mask
-        _pp_vgt_int(maskIsNotZero, count, zero, maskIsNotZero);
+        _pp_vgt_int(maskIsNotZero, count, zero, maskPart);
         // While loop
         while (_pp_cntbits(maskIsNotZero) > 0) { // while (count > 0) {
             // Multiply result by x
             _pp_vmult_float(result, result, x, maskIsNotZero); // result *= x;
             // Subtract count by 1
-            _pp_vsub_int(count, count, int_one, maskAll); // count--;
+            _pp_vsub_int(count, count, int_one, maskPart); // count--;
             // Get new non-zero mask
-            _pp_vgt_int(maskIsNotZero, count, zero, maskIsNotZero);
+            _pp_vgt_int(maskIsNotZero, count, zero, maskPart);
         }
         // Set mask according to predicate
         _pp_vgt_float(maskGtNine, result, nine, maskPart); // if (result > 9.999999f) {
