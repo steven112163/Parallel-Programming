@@ -80,7 +80,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
         // Move x to result
         _pp_vmove_float(result, x, maskIsNotZero); // result = x;
         // Get count
-        _pp_vsub_int(count, y, int_one, maskIsNotZero); // count = y - 1;
+        _pp_vsub_int(count, y, int_one, maskAll); // count = y - 1;
         // Get new non-zero mask
         _pp_vgt_int(maskIsNotZero, count, zero, maskIsNotZero);
         // While loop
@@ -88,7 +88,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
             // Multiply result by x
             _pp_vmult_float(result, result, x, maskIsNotZero); // result *= x;
             // Subtract count by 1
-            _pp_vsub_int(count, count, int_one, maskIsNotZero); // count--;
+            _pp_vsub_int(count, count, int_one, maskAll); // count--;
             // Get new non-zero mask
             _pp_vgt_int(maskIsNotZero, count, zero, maskIsNotZero);
         }
@@ -102,7 +102,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
     }
 
     // Handle (N % VECTOR_WIDTH) != 0
-    if (i + VECTOR_WIDTH > N) {
+    if (i < N && i + VECTOR_WIDTH > N) {
         maskPart = _pp_init_ones(N - i);
         maskIsZero = _pp_init_ones(0);
 
@@ -133,7 +133,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
             // Multiply result by x
             _pp_vmult_float(result, result, x, maskIsNotZero); // result *= x;
             // Subtract count by 1
-            _pp_vsub_int(count, count, int_one, maskIsNotZero); // count--;
+            _pp_vsub_int(count, count, int_one, maskAll); // count--;
             // Get new non-zero mask
             _pp_vgt_int(maskIsNotZero, count, zero, maskIsNotZero);
         }
