@@ -156,18 +156,14 @@ float arraySumVector(float *values, int N) {
     //
 
     float result[VECTOR_WIDTH];
-    bool power_of_2 = ((int) VECTOR_WIDTH / 2) % 2 == 0;
     float sum = 0.0;
 
     int number_of_hadd_and_interleave = 0;
-    if (power_of_2) {
-        int current = VECTOR_WIDTH;
-        while (current > 1) {
-            number_of_hadd_and_interleave++;
-            current /= 2;
-        }
-    } else
-        number_of_hadd_and_interleave = 1;
+    int current = VECTOR_WIDTH;
+    while (current > 1) {
+        number_of_hadd_and_interleave++;
+        current /= 2;
+    }
 
     __pp_vec_float x, y;
     __pp_mask maskAll = _pp_init_ones();
@@ -186,23 +182,10 @@ float arraySumVector(float *values, int N) {
             _pp_hadd_float(x, x);
         }
 
-        if (!power_of_2) {
-            // Interleave
-            _pp_interleave_float(y, x);
-
-            // Move result back to x
-            _pp_vmove_float(x, y, maskAll);
-        }
-
         // Store vector to result
         _pp_vstore_float(result, x, maskAll);
 
-        if (power_of_2)
-            sum += result[0];
-        else {
-            for (int j = 0; j < VECTOR_WIDTH / 2; j++)
-                sum += result[j];
-        }
+        sum += result[0];
     }
 
     return sum;
