@@ -3,3 +3,4 @@
 *o
 myexp
 *.s
+test_auto_vectorize
