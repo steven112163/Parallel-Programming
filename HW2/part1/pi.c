@@ -49,10 +49,11 @@ void *generate_tosses(void *tosses_in_thread) {
     long long num_in_circle = 0;
 
     unsigned int seed = (unsigned int) time(NULL);
+    double max_div_2 = (double) RAND_MAX / 2;
 
     for (long long toss = 0; toss < num_of_tosses; toss++) {
-        double x = (double) rand_r(&seed) / RAND_MAX;
-        double y = (double) rand_r(&seed) / RAND_MAX;
+        double x = (double) rand_r(&seed) / max_div_2 - 1;
+        double y = (double) rand_r(&seed) / max_div_2 - 1;
         if (x * x + y * y <= 1)
             num_in_circle++;
     }
