@@ -6,3 +6,4 @@ myexp
 test_auto_vectorize
 *.orig
 *.rej
+*.ppm
