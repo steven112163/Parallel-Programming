@@ -2,6 +2,8 @@
 #include <time.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "SIMDxorshift/include/simdxorshift128plus.h"
+#include <immintrin.h>
 
 void *generate_tosses(void *tosses_in_thread);
 
@@ -48,14 +50,40 @@ void *generate_tosses(void *tosses_in_thread) {
     long long num_of_tosses = (long long) tosses_in_thread;
     long long num_in_circle = 0;
 
+    // Setup SIMD random number generator
     unsigned int seed = (unsigned int) time(NULL);
-    double max_div_2 = (double) RAND_MAX / 2;
+    avx_xorshift128plus_key_t key;
+    uint64_t key_1 = rand_r(&seed);
+    uint64_t key_2 = rand_r(&seed);
+    if (key_1 == 0)
+        key_1 = 1;
+    if (key_2 == 0)
+        key_2 = 1;
+    avx_xorshift128plus_init(key_1, key_2, &key);
 
-    for (long long toss = 0; toss < num_of_tosses; toss++) {
-        double x = (double) rand_r(&seed) / max_div_2 - 1;
-        double y = (double) rand_r(&seed) / max_div_2 - 1;
-        if (x * x + y * y <= 1)
-            num_in_circle++;
+    __m256 max = _mm256_set1_ps((float) RAND_MAX);
+    __m256 ones = _mm256_set1_ps((float) 1);
+
+    for (long long toss = 0; toss < num_of_tosses; toss += 8) {
+        __m256i int_x = avx_xorshift128plus(&key);
+        __m256 float_x = _mm256_cvtepi32_ps(int_x);
+        __m256 x = _mm256_div_ps(float_x, max);
+        __m256 x_squared = _mm256_mul_ps(x, x);
+
+        __m256i int_y = avx_xorshift128plus(&key);
+        __m256 float_y = _mm256_cvtepi32_ps(int_y);
+        __m256 y = _mm256_div_ps(float_y, max);
+        __m256 y_squared = _mm256_mul_ps(y, y);
+
+        __m256 distance = _mm256_add_ps(x_squared, y_squared);
+        __m256 result = _mm256_cmp_ps(distance, ones, _CMP_LE_OQ);
+
+        float val[8];
+        _mm256_store_ps(val, result);
+
+        for (int idx = 0; idx < 8; idx++)
+            if (val[idx] != 0)
+                num_in_circle++;
     }
 
     return (void *) num_in_circle;
