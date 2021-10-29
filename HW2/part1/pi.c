@@ -64,23 +64,28 @@ void *generate_tosses(void *tosses_in_thread) {
     __m256 max = _mm256_set1_ps((float) RAND_MAX);
     __m256 ones = _mm256_set1_ps((float) 1);
 
+    // Start tossing
     for (long long toss = 0; toss < num_of_tosses; toss += 8) {
+        // Get x^2
         __m256i int_x = avx_xorshift128plus(&key);
         __m256 float_x = _mm256_cvtepi32_ps(int_x);
         __m256 x = _mm256_div_ps(float_x, max);
         __m256 x_squared = _mm256_mul_ps(x, x);
 
+        // Get y^2
         __m256i int_y = avx_xorshift128plus(&key);
         __m256 float_y = _mm256_cvtepi32_ps(int_y);
         __m256 y = _mm256_div_ps(float_y, max);
         __m256 y_squared = _mm256_mul_ps(y, y);
 
+        // Calculate whether x^2 + y^2 <= 1
         __m256 distance = _mm256_add_ps(x_squared, y_squared);
         __m256 result = _mm256_cmp_ps(distance, ones, _CMP_LE_OQ);
 
         float val[8];
         _mm256_store_ps(val, result);
 
+        // If x^2 + y^2 > 1, then the value is 0
         for (int idx = 0; idx < 8; idx++)
             if (val[idx] != 0)
                 num_in_circle++;
