@@ -35,6 +35,8 @@ void workerThreadStart(WorkerArgs *const args) {
 
     // printf("Hello world from thread %d\n", args->threadId);
 
+    double startTime = CycleTimer::currentSeconds();
+
     // Compute workload
     int num_of_rows = (int) args->height / args->numThreads;
     int remaining_rows = args->height - num_of_rows * args->numThreads;
@@ -48,6 +50,9 @@ void workerThreadStart(WorkerArgs *const args) {
     // Call serial function
     mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height, start_row, total_row,
                      args->maxIterations, args->output);
+
+    // Show running time
+    printf("Running time of thread %d: %.3f\n", args->threadId, CycleTimer::currentSeconds() - startTime);
 }
 
 //
