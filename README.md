@@ -13,3 +13,4 @@
 |HW|Description|
 |---|---|
 |HW1|SIMD|
+|HW2|Multi-thread|
