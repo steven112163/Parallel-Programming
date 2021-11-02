@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 
     // Calculate the number of tosses that each thread has to deal with
     long long tosses_in_thread = (long long) (total_tosses / num_of_threads);
-    long long remaining_tosses = total_tosses - tosses_in_thread * num_of_threads;
+    long long remaining_tosses = total_tosses % num_of_threads;
 
     // Create threads and initialize random states
     pthread_t *threads = malloc(num_of_threads * sizeof(pthread_t));
@@ -51,18 +51,10 @@ void *generate_tosses(void *tosses_in_thread) {
     long long num_in_circle = 0;
 
     // Setup SIMD random number generator
-    unsigned int seed = (unsigned int) time(NULL);
     avx_xorshift128plus_key_t key;
-    uint64_t key_1 = rand_r(&seed);
-    uint64_t key_2 = rand_r(&seed);
-    if (key_1 == 0)
-        key_1 = 1;
-    if (key_2 == 0)
-        key_2 = 1;
-    avx_xorshift128plus_init(key_1, key_2, &key);
+    avx_xorshift128plus_init(324, 4444, &key);
 
     __m256 max = _mm256_set1_ps((float) RAND_MAX);
-    __m256 ones = _mm256_set1_ps((float) 1);
 
     // Start tossing
     for (long long toss = 0; toss < num_of_tosses; toss += 8) {
@@ -78,16 +70,15 @@ void *generate_tosses(void *tosses_in_thread) {
         __m256 y = _mm256_div_ps(float_y, max);
         __m256 y_squared = _mm256_mul_ps(y, y);
 
-        // Calculate whether x^2 + y^2 <= 1
+        // Calculate whether x^2 + y^2
         __m256 distance = _mm256_add_ps(x_squared, y_squared);
-        __m256 result = _mm256_cmp_ps(distance, ones, _CMP_LE_OQ);
 
-        float val[8];
-        _mm256_store_ps(val, result);
+        float result[8];
+        _mm256_store_ps(result, distance);
 
-        // If x^2 + y^2 > 1, then the value is 0
+        // Check if x^2 + y^2 <= 1
         for (int idx = 0; idx < 8; idx++)
-            if (val[idx] != 0)
+            if (result[idx] <= 1.0f)
                 num_in_circle++;
     }
 
