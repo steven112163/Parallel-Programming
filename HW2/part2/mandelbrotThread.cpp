@@ -35,7 +35,7 @@ void workerThreadStart(WorkerArgs *const args) {
 
     // printf("Hello world from thread %d\n", args->threadId);
 
-    double startTime = CycleTimer::currentSeconds();
+    // double startTime = CycleTimer::currentSeconds();
 
     // Call serial function
     for (unsigned int idx = args->threadId; idx < args->height; idx += args->numThreads)
@@ -43,7 +43,7 @@ void workerThreadStart(WorkerArgs *const args) {
                          args->maxIterations, args->output);
 
     // Show running time
-    printf("Running time of thread %d: %.3f\n", args->threadId, CycleTimer::currentSeconds() - startTime);
+    // printf("Running time of thread %d: %.3f\n", args->threadId, CycleTimer::currentSeconds() - startTime);
 }
 
 //
