@@ -38,9 +38,16 @@ void workerThreadStart(WorkerArgs *const args) {
     double startTime = CycleTimer::currentSeconds();
 
     // Call serial function
-    for (unsigned int idx = args->threadId; idx < args->height; idx += args->numThreads)
-        mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height, idx, 1,
-                         args->maxIterations, args->output);
+    int rows_in_thread = args->height / args->numThreads;
+    int remaining_rows = args->height - rows_in_thread * args->numThreads;
+    int start_row = args->threadId * rows_in_thread;
+    if (args->threadId == args->numThreads - 1)
+        rows_in_thread += remaining_rows;
+    mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height, start_row, rows_in_thread,
+                     args->maxIterations, args->output);
+//    for (unsigned int idx = args->threadId; idx < args->height; idx += args->numThreads)
+//        mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height, idx, 1,
+//                         args->maxIterations, args->output);
 
     // Show running time
     printf("Running time of thread %d: %.3f\n", args->threadId, CycleTimer::currentSeconds() - startTime);
