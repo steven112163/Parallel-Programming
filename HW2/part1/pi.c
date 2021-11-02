@@ -19,13 +19,13 @@ int main(int argc, char *argv[]) {
 
     // Calculate the number of tosses that each thread has to deal with
     long long tosses_in_thread = (long long) (total_tosses / num_of_threads);
-    long long remaining_tosses = total_tosses % num_of_threads;
 
     // Create threads and initialize random states
     pthread_t *threads = malloc(num_of_threads * sizeof(pthread_t));
     for (long idx = 0; idx < num_of_threads; idx++) {
         if (idx == 0)
-            pthread_create(&threads[idx], NULL, generate_tosses, (void *) (tosses_in_thread + remaining_tosses));
+            pthread_create(&threads[idx], NULL, generate_tosses,
+                           (void *) (tosses_in_thread + total_tosses % num_of_threads));
         else
             pthread_create(&threads[idx], NULL, generate_tosses, (void *) tosses_in_thread);
     }
