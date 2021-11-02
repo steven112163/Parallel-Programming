@@ -30,7 +30,7 @@ The SIMD library used in part 1 is from [link](https://github.com/lemire/SIMDxor
   The table below shows that the thread with ID 1 is much slower than other threads. The phenomenon confirms that the reason for the nonlinear speedup is due to the locality of reference. Therefore, the false sharing caused by locality of reference, which results from consecutive memory accesses, makes the running time slower.
   |Running Time of Each Thread|Average Running Time of Each Thread|
   |:-:|:-:|
-  |![](https://i.imgur.com/Roq07wf.png)||
+  |![](https://i.imgur.com/Roq07wf.png)|![](https://i.imgur.com/t2v8rAJ.png)|
 
 
 
