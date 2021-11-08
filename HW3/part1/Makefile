@@ -26,6 +26,6 @@ cg.o:	cg.c  globals.h
 cg_impl.o:	cg_impl.c  globals.h
 
 clean:
-	- rm -f *.o *~
+	- rm -f *.o *~ *.data
 	rm -f ${COMMON}/*.o
 	rm -f ${PROGRAMNAME} cg_grader
