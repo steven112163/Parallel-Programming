@@ -49,6 +49,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     // precision scores are used to avoid underflow for large graphs
     int numNodes = num_nodes(g);
     double equal_prob = 1.0 / numNodes;
+    #pragma omp parallel for
     for (int i = 0; i < numNodes; ++i) {
         solution[i] = equal_prob;
     }
@@ -63,6 +64,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
 
         // Compute sum of no outgoing nodes
         double sum_of_no_outgoing = 0.0;
+        #pragma omp paralle for reduction (+:sum_of_no_outgoing)
         for (int no_outgoing = 0; no_outgoing < numNodes; no_outgoing++) {
             if (outgoing_size(g, no_outgoing) == 0)
                 sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
@@ -72,6 +74,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
         double global_diff = 0.0;
 
         // Compute solution[vi] for all nodes vi
+        #pragma omp parallel for reduction (+:global_diff)
         for (int vi = 0; vi < numNodes; vi++) {
             const Vertex *start = incoming_begin(g, vi);
             const Vertex *end = incoming_end(g, vi);
