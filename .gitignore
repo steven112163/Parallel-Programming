@@ -8,3 +8,6 @@ test_auto_vectorize
 *.rej
 *.ppm
 mandelbrot
+cg
+cg_grader
+*.data
