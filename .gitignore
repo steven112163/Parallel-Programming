@@ -11,3 +11,6 @@ mandelbrot
 cg
 cg_grader
 *.data
+graphs
+pr
+pr_grader

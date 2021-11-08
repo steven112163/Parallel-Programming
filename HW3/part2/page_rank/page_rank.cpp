@@ -15,45 +15,78 @@
 // damping:     page-rank algorithm's damping parameter
 // convergence: page-rank algorithm's convergence threshold
 //
-void pageRank(Graph g, double *solution, double damping, double convergence)
-{
+void pageRank(Graph g, double *solution, double damping, double convergence) {
+    /*
+       For PP students: Implement the page rank algorithm here.  You
+       are expected to parallelize the algorithm using openMP.  Your
+       solution may need to allocate (and free) temporary arrays.
 
-  // initialize vertex weights to uniform probability. Double
-  // precision scores are used to avoid underflow for large graphs
+       Basic page rank pseudocode is provided below to get you started:
 
-  int numNodes = num_nodes(g);
-  double equal_prob = 1.0 / numNodes;
-  for (int i = 0; i < numNodes; ++i)
-  {
-    solution[i] = equal_prob;
-  }
+       // initialization: see example code above
+       score_old[vi] = 1/numNodes;
 
-  /*
-     For PP students: Implement the page rank algorithm here.  You
-     are expected to parallelize the algorithm using openMP.  Your
-     solution may need to allocate (and free) temporary arrays.
+       while (!converged) {
 
-     Basic page rank pseudocode is provided below to get you started:
+         // compute score_new[vi] for all nodes vi:
+         score_new[vi] = sum over all nodes vj reachable from incoming edges
+                            { score_old[vj] / number of edges leaving vj  }
+         score_new[vi] = (damping * score_new[vi]) + (1.0-damping) / numNodes;
 
-     // initialization: see example code above
-     score_old[vi] = 1/numNodes;
+         score_new[vi] += sum over all nodes v in graph with no outgoing edges
+                            { damping * score_old[v] / numNodes }
 
-     while (!converged) {
+         // compute how much per-node scores have changed
+         // quit once algorithm has converged
 
-       // compute score_new[vi] for all nodes vi:
-       score_new[vi] = sum over all nodes vj reachable from incoming edges
-                          { score_old[vj] / number of edges leaving vj  }
-       score_new[vi] = (damping * score_new[vi]) + (1.0-damping) / numNodes;
+         global_diff = sum over all nodes vi { abs(score_new[vi] - score_old[vi]) };
+         converged = (global_diff < convergence)
+       }
 
-       score_new[vi] += sum over all nodes v in graph with no outgoing edges
-                          { damping * score_old[v] / numNodes }
+     */
 
-       // compute how much per-node scores have changed
-       // quit once algorithm has converged
+    // Initialize vertex weights to uniform probability. Double
+    // precision scores are used to avoid underflow for large graphs
+    int numNodes = num_nodes(g);
+    double equal_prob = 1.0 / numNodes;
+    for (int i = 0; i < numNodes; ++i) {
+        solution[i] = equal_prob;
+    }
 
-       global_diff = sum over all nodes vi { abs(score_new[vi] - score_old[vi]) };
-       converged = (global_diff < convergence)
-     }
+    // Declare old solution
+    double *old_solution = (double *) malloc(numNodes * sizeof(double));
 
-   */
+    bool converged = false;
+    while (!converged) {
+        // Copy solution to old_solution
+        memcpy(old_solution, solution, numNodes);
+
+        // Compute sum of no outgoing nodes
+        double sum_of_no_outgoing = 0.0;
+        for (int no_outgoing = 0; no_outgoing < numNodes; no_outgoing++) {
+            if (outgoing_size(g, no_outgoing) == 0)
+                sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
+        }
+
+        // Declare global difference
+        double global_diff = 0.0;
+
+        // Compute solution[vi] for all nodes vi
+        for (int vi = 0; vi < numNodes; vi++) {
+            const Vertex *start = incoming_begin(g, vi);
+            const Vertex *end = incoming_end(g, vi);
+            double sum = 0.0;
+            for (const Vertex *incoming = start; incoming != end; incoming++) {
+                sum += old_solution[*incoming] / outgoing_size(g, *incoming);
+            }
+            solution[vi] = (damping * sum) + (1.0 - damping) / numNodes + sum_of_no_outgoing;
+
+            // Compute how much per-node scores have changed
+            global_diff += abs(old_solution[vi] - solution[vi]);
+        }
+
+        // Quit once algorithm has converged
+        converged = (global_diff < convergence);
+    }
+    delete old_solution;
 }
