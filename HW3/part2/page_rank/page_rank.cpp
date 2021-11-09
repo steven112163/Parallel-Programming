@@ -60,7 +60,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     bool converged = false;
     while (!converged) {
         // Copy solution to old_solution
-        memcpy(old_solution, solution, numNodes);
+        memcpy(old_solution, solution, numNodes * sizeof(double));
 
         // Compute sum of no outgoing nodes
         double sum_of_no_outgoing = 0.0;
@@ -85,7 +85,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
             solution[vi] = (damping * sum) + (1.0 - damping) / numNodes + sum_of_no_outgoing;
 
             // Compute how much per-node scores have changed
-            global_diff += abs(old_solution[vi] - solution[vi]);
+            global_diff += fabs(old_solution[vi] - solution[vi]);
         }
 
         // Quit once algorithm has converged
