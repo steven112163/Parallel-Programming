@@ -50,7 +50,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     int numNodes = num_nodes(g);
     double equal_prob = 1.0 / numNodes;
     #pragma omp parallel for
-    for (int i = 0; i < numNodes; ++i) {
+    for (int i = 0; i < numNodes; i++) {
         solution[i] = equal_prob;
     }
 
@@ -60,36 +60,36 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     // Declare sum of no outgoing nodes and global difference
     double sum_of_no_outgoing, global_diff;
 
-    // Declare dummy constant
-    double constant = (1.0 - damping) / numNodes;
-
     bool converged = false;
     while (!converged) {
         // Copy solution to old_solution
         memcpy(old_solution, solution, numNodes * sizeof(double));
 
-        // Compute sum of no outgoing nodes
         sum_of_no_outgoing = 0.0;
-        #pragma omp parallel for reduction (+:sum_of_no_outgoing)
-        for (int no_outgoing = 0; no_outgoing < numNodes; no_outgoing++) {
-            if (outgoing_size(g, no_outgoing) == 0)
-                sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
-        }
-
-        // Compute solution[vi] for all nodes vi
         global_diff = 0.0;
-        #pragma omp parallel for reduction (+:global_diff)
-        for (int vi = 0; vi < numNodes; vi++) {
-            const Vertex *start = incoming_begin(g, vi);
-            const Vertex *end = incoming_end(g, vi);
-            double sum = 0.0;
-            for (const Vertex *incoming = start; incoming != end; incoming++) {
-                sum += old_solution[*incoming] / outgoing_size(g, *incoming);
+        #pragma omp parallel
+        {
+            // Compute sum of no outgoing nodes
+            #pragma omp for reduction (+:sum_of_no_outgoing)
+            for (int no_outgoing = 0; no_outgoing < numNodes; no_outgoing++) {
+                if (outgoing_size(g, no_outgoing) == 0)
+                    sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
             }
-            solution[vi] = (damping * sum) + constant + sum_of_no_outgoing;
 
-            // Compute how much per-node scores have changed
-            global_diff += fabs(old_solution[vi] - solution[vi]);
+            // Compute solution[vi] for all nodes vi
+            #pragma omp for reduction (+:global_diff)
+            for (int vi = 0; vi < numNodes; vi++) {
+                const Vertex *start = incoming_begin(g, vi);
+                const Vertex *end = incoming_end(g, vi);
+                double sum = 0.0;
+                for (const Vertex *incoming = start; incoming != end; incoming++) {
+                    sum += old_solution[*incoming] / outgoing_size(g, *incoming);
+                }
+                solution[vi] = (damping * sum) + (1.0 - damping) / numNodes + sum_of_no_outgoing;
+
+                // Compute how much per-node scores have changed
+                global_diff += fabs(old_solution[vi] - solution[vi]);
+            }
         }
 
         // Quit once algorithm has converged
