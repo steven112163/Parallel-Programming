@@ -156,7 +156,7 @@ void bfs_bottom_up(Graph graph, solution *sol) {
     #pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
-    memset(&frontier->vertices, NOT_VISITED_BOTTOM_UP, graph->num_nodes * sizeof(int));
+    memset(frontier->vertices, NOT_VISITED_BOTTOM_UP, graph->num_nodes * sizeof(int));
 
     // Setup frontier with the root node
     int current_distance = 1;
