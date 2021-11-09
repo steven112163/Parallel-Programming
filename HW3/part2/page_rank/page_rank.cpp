@@ -49,6 +49,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     // precision scores are used to avoid underflow for large graphs
     int numNodes = num_nodes(g);
     double equal_prob = 1.0 / numNodes;
+    #pragma omp parallel for
     for (int i = 0; i < numNodes; ++i) {
         solution[i] = equal_prob;
     }
@@ -68,11 +69,12 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
         memcpy(old_solution, solution, numNodes * sizeof(double));
 
         // Compute sum of no outgoing nodes
-        sum_of_no_outgoing = 0.0;
+        sum_of_no_outgoing = constant;
         #pragma omp parallel for reduction (+:sum_of_no_outgoing)
         for (int no_outgoing = 0; no_outgoing < numNodes; no_outgoing++) {
-            if (outgoing_size(g, no_outgoing) == 0)
-                sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
+            if (outgoing_size(g, no_outgoing) > 0)
+                continue;
+            sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
         }
 
         // Compute solution[vi] for all nodes vi
@@ -85,7 +87,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
             for (const Vertex *incoming = start; incoming != end; incoming++) {
                 sum += old_solution[*incoming] / outgoing_size(g, *incoming);
             }
-            solution[vi] = (damping * sum) + constant + sum_of_no_outgoing;
+            solution[vi] = (damping * sum) + sum_of_no_outgoing;
 
             // Compute how much per-node scores have changed
             global_diff += fabs(old_solution[vi] - solution[vi]);
