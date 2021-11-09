@@ -57,23 +57,27 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     // Declare old solution
     double *old_solution = (double *) malloc(numNodes * sizeof(double));
 
+    // Declare sum of no outgoing nodes and global difference
+    double sum_of_no_outgoing, global_diff;
+
+    // Declare dummy constant
+    double constant = (1.0 - damping) / numNodes;
+
     bool converged = false;
     while (!converged) {
         // Copy solution to old_solution
         memcpy(old_solution, solution, numNodes * sizeof(double));
 
         // Compute sum of no outgoing nodes
-        double sum_of_no_outgoing = 0.0;
-        #pragma omp paralle for reduction (+:sum_of_no_outgoing)
+        sum_of_no_outgoing = 0.0;
+        #pragma omp parallel for reduction (+:sum_of_no_outgoing)
         for (int no_outgoing = 0; no_outgoing < numNodes; no_outgoing++) {
             if (outgoing_size(g, no_outgoing) == 0)
                 sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
         }
 
-        // Declare global difference
-        double global_diff = 0.0;
-
         // Compute solution[vi] for all nodes vi
+        global_diff = 0.0;
         #pragma omp parallel for reduction (+:global_diff)
         for (int vi = 0; vi < numNodes; vi++) {
             const Vertex *start = incoming_begin(g, vi);
@@ -82,7 +86,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
             for (const Vertex *incoming = start; incoming != end; incoming++) {
                 sum += old_solution[*incoming] / outgoing_size(g, *incoming);
             }
-            solution[vi] = (damping * sum) + (1.0 - damping) / numNodes + sum_of_no_outgoing;
+            solution[vi] = (damping * sum) + constant + sum_of_no_outgoing;
 
             // Compute how much per-node scores have changed
             global_diff += fabs(old_solution[vi] - solution[vi]);
