@@ -12,6 +12,7 @@
 #define ROOT_NODE_ID 0
 #define NOT_VISITED_DISTANCE -1
 #define NOT_VISITED_VERTEX 0
+#define THRESHOLD 7500000
 
 void vertex_set_clear(vertex_set *list) {
     list->count = 0;
@@ -27,10 +28,10 @@ void vertex_set_init(vertex_set *list, int count) {
 // follow all outgoing edges, and add all neighboring vertices to the
 // new_frontier.
 void top_down_step(
-        Graph g,
+        Graph &g,
         vertex_set *frontier,
         int *distances,
-        int& current_frontier) {
+        int &current_frontier) {
     int num_of_frontiers = 0;
 
     #pragma omp parallel for reduction (+:num_of_frontiers)
@@ -64,10 +65,10 @@ void top_down_step(
 // distance to the root is stored in sol.distances.
 void bfs_top_down(Graph graph, solution *sol) {
 
-    vertex_set list1;
-    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set list;
+    vertex_set_init(&list, graph->num_nodes);
 
-    vertex_set *frontier = &list1;
+    vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
     #pragma omp parallel for
@@ -82,18 +83,18 @@ void bfs_top_down(Graph graph, solution *sol) {
 
     while (frontier->count != 0) {
 
-#ifdef VERBOSE
+        #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
-#endif
+        #endif
 
         vertex_set_clear(frontier);
 
         top_down_step(graph, frontier, sol->distances, num_of_hops);
 
-#ifdef VERBOSE
+        #ifdef VERBOSE
         double end_time = CycleTimer::currentSeconds();
         printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
-#endif
+        #endif
 
         num_of_hops++;
     }
@@ -104,7 +105,7 @@ void bfs_top_down(Graph graph, solution *sol) {
 // Take one step of "bottom-up" BFS.  For each vertex, check whether
 // it should be added to the new_frontier.
 void bottom_up_step(
-        Graph g,
+        Graph &g,
         vertex_set *frontier,
         int *distances,
         int& num_of_hops) {
@@ -148,10 +149,10 @@ void bfs_bottom_up(Graph graph, solution *sol) {
     // As was done in the top-down case, you may wish to organize your
     // code by creating subroutine bottom_up_step() that is called in
     // each step of the BFS process.
-    vertex_set list1;
-    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set list;
+    vertex_set_init(&list, graph->num_nodes);
 
-    vertex_set *frontier = &list1;
+    vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
     #pragma omp parallel for
@@ -166,18 +167,18 @@ void bfs_bottom_up(Graph graph, solution *sol) {
 
     while (frontier->count != 0) {
 
-#ifdef VERBOSE
+        #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
-#endif
+        #endif
 
         vertex_set_clear(frontier);
 
         bottom_up_step(graph, frontier, sol->distances, num_of_hops);
 
-#ifdef VERBOSE
+        #ifdef VERBOSE
         double end_time = CycleTimer::currentSeconds();
         printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
-#endif
+        #endif
 
         num_of_hops++;
     }
@@ -190,4 +191,44 @@ void bfs_hybrid(Graph graph, solution *sol) {
     //
     // You will need to implement the "hybrid" BFS here as
     // described in the handout.
+
+    vertex_set list;
+    vertex_set_init(&list, graph->num_nodes);
+
+    vertex_set *frontier = &list;
+
+    // Initialize all nodes to NOT_VISITED
+    #pragma omp parallel for
+    for (int i = 0; i < graph->num_nodes; i++)
+        sol->distances[i] = NOT_VISITED_DISTANCE;
+
+    // Setup frontier with the root node
+    // Number of hops to the root node
+    int num_of_hops = 1;
+    frontier->vertices[frontier->count++] = num_of_hops;
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    while (frontier->count != 0) {
+
+        #ifdef VERBOSE
+        double start_time = CycleTimer::currentSeconds();
+        #endif
+
+        if (frontier->count > THRESHOLD) {
+            vertex_set_clear(frontier);
+            bottom_up_step(graph, frontier, sol->distances, num_of_hops);
+        } else {
+            vertex_set_clear(frontier);
+            top_down_step(graph, frontier, sol->distances, num_of_hops);
+        }
+
+        #ifdef VERBOSE
+        double end_time = CycleTimer::currentSeconds();
+        printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
+        #endif
+
+        num_of_hops++;
+    }
+
+    delete frontier->vertices;
 }
