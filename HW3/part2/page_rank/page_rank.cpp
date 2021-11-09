@@ -49,7 +49,6 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     // precision scores are used to avoid underflow for large graphs
     int numNodes = num_nodes(g);
     double equal_prob = 1.0 / numNodes;
-    #pragma omp parallel for
     for (int i = 0; i < numNodes; ++i) {
         solution[i] = equal_prob;
     }
