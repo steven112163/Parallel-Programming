@@ -12,7 +12,7 @@
 #define ROOT_NODE_ID 0
 #define NOT_VISITED_DISTANCE -1
 #define NOT_VISITED_VERTEX 0
-#define THRESHOLD 7500000
+#define THRESHOLD 5000000
 
 void vertex_set_clear(vertex_set *list) {
     list->count = 0;
@@ -98,8 +98,6 @@ void bfs_top_down(Graph graph, solution *sol) {
 
         num_of_hops++;
     }
-
-    delete frontier->vertices;
 }
 
 // Take one step of "bottom-up" BFS.  For each vertex, check whether
@@ -182,8 +180,6 @@ void bfs_bottom_up(Graph graph, solution *sol) {
 
         num_of_hops++;
     }
-
-    delete frontier->vertices;
 }
 
 void bfs_hybrid(Graph graph, solution *sol) {
@@ -229,6 +225,4 @@ void bfs_hybrid(Graph graph, solution *sol) {
 
         num_of_hops++;
     }
-
-    delete frontier->vertices;
 }
