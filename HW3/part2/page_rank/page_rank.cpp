@@ -60,13 +60,15 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
     // Declare sum of no outgoing nodes and global difference
     double sum_of_no_outgoing, global_diff;
 
-    // Declare dummy constant
+    // Declare dummy constants
     double constant = (1.0 - damping) / numNodes;
+    double multiple = damping / numNodes;
+    size_t mem_size = numNodes * sizeof(double);
 
     bool converged = false;
     while (!converged) {
         // Copy solution to old_solution
-        memcpy(old_solution, solution, numNodes * sizeof(double));
+        memcpy(old_solution, solution, mem_size);
 
         sum_of_no_outgoing = constant;
         global_diff = 0.0;
@@ -77,7 +79,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence) {
             #pragma omp for reduction (+:sum_of_no_outgoing)
             for (int no_outgoing = 0; no_outgoing < numNodes; no_outgoing++) {
                 if (outgoing_size(g, no_outgoing) == 0)
-                    sum_of_no_outgoing += damping * old_solution[no_outgoing] / numNodes;
+                    sum_of_no_outgoing += multiple * old_solution[no_outgoing];
             }
 
             // Compute solution[vi] for all nodes vi
