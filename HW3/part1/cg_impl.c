@@ -213,7 +213,6 @@ void makea(int n,
         vecset(n, vc, ivc, &nzv, iouter + 1, 0.5);
         arow[iouter] = nzv;
 
-        #pragma omp parallel for
         for (ivelt = 0; ivelt < nzv; ivelt++) {
             acol[iouter][ivelt] = ivc[ivelt] - 1;
             aelt[iouter][ivelt] = vc[ivelt];
@@ -560,7 +559,6 @@ void iterate(double *zeta, int *it) {
     //---------------------------------------------------------------------
     // Normalize z to obtain x
     //---------------------------------------------------------------------
-    #pragma omp parallel for
     for (j = 0; j < lastcol - firstcol + 1; j++) {
         x[j] = norm_temp2 * z[j];
     }
