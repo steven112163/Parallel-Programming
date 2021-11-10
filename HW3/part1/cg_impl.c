@@ -296,7 +296,6 @@ void sparse(double a[],
     //---------------------------------------------------------------------
     // ... preload data pages
     //---------------------------------------------------------------------
-    #pragma omp parallel for
     for (j = 0; j < nrows; j++) {
         for (k = rowstr[j]; k < rowstr[j + 1]; k++) {
             a[k] = 0.0;
@@ -388,6 +387,7 @@ void sparse(double a[],
             nza = nza + 1;
         }
     }
+    #pragma omp parallel for
     for (j = 1; j < nrows + 1; j++) {
         rowstr[j] = rowstr[j] - nzloc[j - 1];
     }
@@ -545,7 +545,6 @@ void iterate(double *zeta, int *it) {
     //---------------------------------------------------------------------
     norm_temp1 = 0.0;
     norm_temp2 = 0.0;
-    #pragma omp parallel for
     for (j = 0; j < lastcol - firstcol + 1; j++) {
         norm_temp1 = norm_temp1 + x[j] * z[j];
         norm_temp2 = norm_temp2 + z[j] * z[j];
