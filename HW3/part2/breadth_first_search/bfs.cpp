@@ -13,6 +13,7 @@
 #define NOT_VISITED_DISTANCE -1
 #define NOT_VISITED_VERTEX 0
 #define THRESHOLD 0.25
+#define DYNAMIC_CHUNK 2048
 
 void vertex_set_clear(vertex_set *list) {
     list->count = 0;
@@ -34,7 +35,7 @@ void top_down_step(
         int &current_frontier) {
     int num_of_frontiers = 0;
 
-    #pragma omp parallel for reduction (+:num_of_frontiers) schedule (dynamic, 1024)
+    #pragma omp parallel for reduction (+:num_of_frontiers) schedule (dynamic, DYNAMIC_CHUNK)
     for (int node = 0; node < g->num_nodes; node++) {
         // If the vertex contains current frontier,
         // then we need to add its neighbors.
@@ -71,7 +72,7 @@ void bfs_top_down(Graph graph, solution *sol) {
     vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
-    #pragma omp parallel for schedule (dynamic, 1024)
+    #pragma omp parallel for schedule (dynamic, DYNAMIC_CHUNK)
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_DISTANCE;
 
@@ -109,7 +110,7 @@ void bottom_up_step(
         int &num_of_hops) {
     int num_of_frontiers = 0;
 
-    #pragma omp parallel for reduction (+:num_of_frontiers) schedule (dynamic, 1024)
+    #pragma omp parallel for reduction (+:num_of_frontiers) schedule (dynamic, DYNAMIC_CHUNK)
     for (int node = 0; node < g->num_nodes; node++) {
         if (frontier->vertices[node] == NOT_VISITED_VERTEX) {
             const int start_edge = g->incoming_starts[node];
@@ -153,7 +154,7 @@ void bfs_bottom_up(Graph graph, solution *sol) {
     vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
-    #pragma omp parallel for schedule (dynamic, 1024)
+    #pragma omp parallel for schedule (dynamic, DYNAMIC_CHUNK)
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_DISTANCE;
 
@@ -194,7 +195,7 @@ void bfs_hybrid(Graph graph, solution *sol) {
     vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
-    #pragma omp parallel for schedule (dynamic, 1024)
+    #pragma omp parallel for schedule (dynamic, DYNAMIC_CHUNK)
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_DISTANCE;
 
