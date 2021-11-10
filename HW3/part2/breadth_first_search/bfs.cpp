@@ -13,6 +13,7 @@
 #define NOT_VISITED_DISTANCE -1
 #define NOT_VISITED_VERTEX 0
 #define THRESHOLD 0.25
+#define DYNAMIC_CHUNK 1024
 
 void vertex_set_clear(vertex_set *list) {
     list->count = 0;
@@ -34,15 +35,15 @@ void top_down_step(
         int &current_frontier) {
     int num_of_frontiers = 0;
 
-    #pragma omp parallel for reduction (+:num_of_frontiers)
+    #pragma omp parallel for reduction (+:num_of_frontiers) schedule (dynamic, DYNAMIC_CHUNK)
     for (int node = 0; node < g->num_nodes; node++) {
         // If the vertex contains current frontier,
         // then we need to add its neighbors.
         if (frontier->vertices[node] == current_frontier) {
             const int start_edge = g->outgoing_starts[node];
             const int end_edge = (node == g->num_nodes - 1)
-                           ? g->num_edges
-                           : g->outgoing_starts[node + 1];
+                                 ? g->num_edges
+                                 : g->outgoing_starts[node + 1];
 
             // Attempt to add all neighbors to the new frontier
             for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
@@ -71,9 +72,7 @@ void bfs_top_down(Graph graph, solution *sol) {
     vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
-    #pragma omp parallel for
-    for (int i = 0; i < graph->num_nodes; i++)
-        sol->distances[i] = NOT_VISITED_DISTANCE;
+    memset(sol->distances, NOT_VISITED_DISTANCE, graph->num_nodes * sizeof(int));
 
     // Setup frontier with the root node
     // Number of hops to the root node
@@ -106,16 +105,16 @@ void bottom_up_step(
         Graph &g,
         vertex_set *frontier,
         int *distances,
-        int& num_of_hops) {
+        int &num_of_hops) {
     int num_of_frontiers = 0;
 
-    #pragma omp parallel for reduction (+:num_of_frontiers)
+    #pragma omp parallel for reduction (+:num_of_frontiers) schedule (dynamic, DYNAMIC_CHUNK)
     for (int node = 0; node < g->num_nodes; node++) {
         if (frontier->vertices[node] == NOT_VISITED_VERTEX) {
             const int start_edge = g->incoming_starts[node];
             const int end_edge = (node == g->num_nodes - 1)
-                           ? g->num_edges
-                           : g->incoming_starts[node + 1];
+                                 ? g->num_edges
+                                 : g->incoming_starts[node + 1];
 
             // Attempt to add all neighbors to the new frontier
             for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
@@ -153,9 +152,7 @@ void bfs_bottom_up(Graph graph, solution *sol) {
     vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
-    #pragma omp parallel for
-    for (int i = 0; i < graph->num_nodes; i++)
-        sol->distances[i] = NOT_VISITED_DISTANCE;
+    memset(sol->distances, NOT_VISITED_DISTANCE, graph->num_nodes * sizeof(int));
 
     // Setup frontier with the root node
     // Number of hops to the root node
@@ -194,9 +191,7 @@ void bfs_hybrid(Graph graph, solution *sol) {
     vertex_set *frontier = &list;
 
     // Initialize all nodes to NOT_VISITED
-    #pragma omp parallel for
-    for (int i = 0; i < graph->num_nodes; i++)
-        sol->distances[i] = NOT_VISITED_DISTANCE;
+    memset(sol->distances, NOT_VISITED_DISTANCE, graph->num_nodes * sizeof(int));
 
     // Setup frontier with the root node
     // Number of hops to the root node
