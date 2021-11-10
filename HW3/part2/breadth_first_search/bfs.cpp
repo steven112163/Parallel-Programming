@@ -12,7 +12,7 @@
 #define ROOT_NODE_ID 0
 #define NOT_VISITED_DISTANCE -1
 #define NOT_VISITED_VERTEX 0
-#define THRESHOLD 5000000
+#define THRESHOLD 0.25
 
 void vertex_set_clear(vertex_set *list) {
     list->count = 0;
@@ -39,14 +39,14 @@ void top_down_step(
         // If the vertex contains current frontier,
         // then we need to add its neighbors.
         if (frontier->vertices[node] == current_frontier) {
-            int start_edge = g->outgoing_starts[node];
-            int end_edge = (node == g->num_nodes - 1)
+            const int start_edge = g->outgoing_starts[node];
+            const int end_edge = (node == g->num_nodes - 1)
                            ? g->num_edges
                            : g->outgoing_starts[node + 1];
 
             // Attempt to add all neighbors to the new frontier
             for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
-                int outgoing = g->outgoing_edges[neighbor];
+                const int outgoing = g->outgoing_edges[neighbor];
 
                 if (frontier->vertices[outgoing] == NOT_VISITED_VERTEX) {
                     num_of_frontiers++;
@@ -112,14 +112,14 @@ void bottom_up_step(
     #pragma omp parallel for reduction (+:num_of_frontiers)
     for (int node = 0; node < g->num_nodes; node++) {
         if (frontier->vertices[node] == NOT_VISITED_VERTEX) {
-            int start_edge = g->incoming_starts[node];
-            int end_edge = (node == g->num_nodes - 1)
+            const int start_edge = g->incoming_starts[node];
+            const int end_edge = (node == g->num_nodes - 1)
                            ? g->num_edges
                            : g->incoming_starts[node + 1];
 
             // Attempt to add all neighbors to the new frontier
             for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
-                int incoming = g->incoming_edges[neighbor];
+                const int incoming = g->incoming_edges[neighbor];
 
                 // If the vertex contains the target number of hops,
                 // then it is the parent of current node.
@@ -204,13 +204,16 @@ void bfs_hybrid(Graph graph, solution *sol) {
     frontier->vertices[frontier->count++] = num_of_hops;
     sol->distances[ROOT_NODE_ID] = 0;
 
+    // Compute threshold count
+    const double threshold_count = graph->num_nodes * THRESHOLD;
+
     while (frontier->count != 0) {
 
         #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
         #endif
 
-        if (frontier->count > THRESHOLD) {
+        if (frontier->count > threshold_count) {
             vertex_set_clear(frontier);
             bottom_up_step(graph, frontier, sol->distances, num_of_hops);
         } else {
