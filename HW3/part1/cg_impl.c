@@ -213,6 +213,7 @@ void makea(int n,
         vecset(n, vc, ivc, &nzv, iouter + 1, 0.5);
         arow[iouter] = nzv;
 
+        #pragma omp parallel for
         for (ivelt = 0; ivelt < nzv; ivelt++) {
             acol[iouter][ivelt] = ivc[ivelt] - 1;
             aelt[iouter][ivelt] = vc[ivelt];
@@ -264,6 +265,7 @@ void sparse(double a[],
     //---------------------------------------------------------------------
     // ...count the number of triples in each row
     //---------------------------------------------------------------------
+    #pragma omp parallel for
     for (j = 0; j < nrows + 1; j++) {
         rowstr[j] = 0;
     }
@@ -294,6 +296,7 @@ void sparse(double a[],
     //---------------------------------------------------------------------
     // ... preload data pages
     //---------------------------------------------------------------------
+    #pragma omp parallel for
     for (j = 0; j < nrows; j++) {
         for (k = rowstr[j]; k < rowstr[j + 1]; k++) {
             a[k] = 0.0;
@@ -451,6 +454,7 @@ void vecset(int n, double v[], int iv[], int *nzv, int i, double val) {
     logical set;
 
     set = false;
+    #pragma omp parallel for
     for (k = 0; k < *nzv; k++) {
         if (iv[k] == i) {
             v[k] = val;
@@ -492,31 +496,37 @@ void init(double *zeta) {
           (double (*)[NONZER + 1]) (void *) aelt,
           iv);
 
-    //---------------------------------------------------------------------
-    // Note: as a result of the above call to makea:
-    //      values of j used in indexing rowstr go from 0 --> lastrow-firstrow
-    //      values of colidx which are col indexes go from firstcol --> lastcol
-    //      So:
-    //      Shift the col index vals from actual (firstcol --> lastcol )
-    //      to local, i.e., (0 --> lastcol-firstcol)
-    //---------------------------------------------------------------------
-    for (j = 0; j < lastrow - firstrow + 1; j++) {
-        for (k = rowstr[j]; k < rowstr[j + 1]; k++) {
-            colidx[k] = colidx[k] - firstcol;
+    #pragma omp parallel
+    {
+        //---------------------------------------------------------------------
+        // Note: as a result of the above call to makea:
+        //      values of j used in indexing rowstr go from 0 --> lastrow-firstrow
+        //      values of colidx which are col indexes go from firstcol --> lastcol
+        //      So:
+        //      Shift the col index vals from actual (firstcol --> lastcol )
+        //      to local, i.e., (0 --> lastcol-firstcol)
+        //---------------------------------------------------------------------
+        #pragma omp for
+        for (j = 0; j < lastrow - firstrow + 1; j++) {
+            for (k = rowstr[j]; k < rowstr[j + 1]; k++) {
+                colidx[k] = colidx[k] - firstcol;
+            }
         }
-    }
 
-    //---------------------------------------------------------------------
-    // set starting vector to (1, 1, .... 1)
-    //---------------------------------------------------------------------
-    for (i = 0; i < NA + 1; i++) {
-        x[i] = 1.0;
-    }
-    for (j = 0; j < lastcol - firstcol + 1; j++) {
-        q[j] = 0.0;
-        z[j] = 0.0;
-        r[j] = 0.0;
-        p[j] = 0.0;
+        //---------------------------------------------------------------------
+        // set starting vector to (1, 1, .... 1)
+        //---------------------------------------------------------------------
+        #pragma omp for
+        for (i = 0; i < NA + 1; i++) {
+            x[i] = 1.0;
+        }
+        #pragma omp for
+        for (j = 0; j < lastcol - firstcol + 1; j++) {
+            q[j] = 0.0;
+            z[j] = 0.0;
+            r[j] = 0.0;
+            p[j] = 0.0;
+        }
     }
 }
 
@@ -535,6 +545,7 @@ void iterate(double *zeta, int *it) {
     //---------------------------------------------------------------------
     norm_temp1 = 0.0;
     norm_temp2 = 0.0;
+    #pragma omp parallel for
     for (j = 0; j < lastcol - firstcol + 1; j++) {
         norm_temp1 = norm_temp1 + x[j] * z[j];
         norm_temp2 = norm_temp2 + z[j] * z[j];
@@ -550,6 +561,7 @@ void iterate(double *zeta, int *it) {
     //---------------------------------------------------------------------
     // Normalize z to obtain x
     //---------------------------------------------------------------------
+    #pragma omp parallel for
     for (j = 0; j < lastcol - firstcol + 1; j++) {
         x[j] = norm_temp2 * z[j];
     }
