@@ -21,3 +21,4 @@ pi_block_linear
 pi_block_tree
 pi_nonblock_linear
 pi_gather
+pi_reduce
