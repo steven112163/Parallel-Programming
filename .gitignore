@@ -18,3 +18,4 @@ bfs
 bfs_grader
 mpi_hello
 pi_block_linear
+pi_block_tree
