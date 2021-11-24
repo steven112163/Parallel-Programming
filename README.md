@@ -6,6 +6,8 @@
 ## 🏹 Prerequisites
 * g++ >= 10
 * clang++ >= 11
+* libomp5
+* mpi4
 
 
 
@@ -15,3 +17,4 @@
 |HW1|SIMD|
 |HW2|Multi-thread|
 |HW3|OpenMP|
+|HW4|MPI|
