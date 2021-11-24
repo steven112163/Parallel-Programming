@@ -95,20 +95,48 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    // Construct matrix result
+    // Declare the window and the result
+    MPI_Win win;
     int *result;
-    if (world_rank == 0)
-        result = (int *) calloc(n * l, sizeof(int));
 
+    // Create the window and allocate the result
     if (world_rank == 0) {
-
+        MPI_Alloc_mem(n * l * sizeof(int), MPI_INFO_NULL, &result);
+        MPI_Win_create(result,
+                       n * l * sizeof(int),
+                       sizeof(int),
+                       MPI_INFO_NULL,
+                       MPI_COMM_WORLD,
+                       &win);
     } else {
-
+        MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win);
     }
 
-    // Destruct matrix result
-    if (world_rank == 0)
-        delete[] result;
+    // Multiply matrices
+    MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
+    for (int idx = world_rank; idx < n * l; idx += world_size) {
+        int row_idx = (int) idx / l;
+        int col_idx = idx % l;
+        int summation = 0;
+        for (int middle_idx = 0; middle_idx < m; middle_idx++)
+            summation += a_mat[row_idx * l + middle_idx] * b_mat[middle_idx * l + col_idx];
+        MPI_Put(&summation, 1, MPI_INT, 0, idx, 1, MPI_INT, win);
+    }
+    MPI_Win_unlock(0, win);
+
+    // Wait for all processes to finished multiplying matrices
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Print the result and destruct it
+    if (world_rank == 0) {
+        for (int idx = 0; idx < n * l; idx++) {
+            std::cout << result[idx] << " ";
+            if (idx % l == l - 1)
+                std::cout << std::endl;
+        }
+
+        MPI_Free_mem(result);
+    }
 }
 
 void destruct_matrices(int *a_mat, int *b_mat) {
