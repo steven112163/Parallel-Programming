@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
         // TODO: PI result
         for (int idx = 1; idx < world_size; idx++)
             num_in_circle += buffer[idx];
+        free(buffer);
         pi_result = 4.0 * num_in_circle / ((double) tosses);
 
         // --- DON'T TOUCH ---
