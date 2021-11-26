@@ -17,7 +17,7 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    // Read data
+    // Read and send n, m, and l
     if (world_rank == MASTER) {
         // Read n, m, and l
         scanf("%d %d %d", n_ptr, m_ptr, l_ptr);
@@ -29,32 +29,22 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
             MPI_Isend(m_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
             MPI_Isend(l_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
         }
-
-        // Construct matrix a
-        *a_mat_ptr = (int *) malloc((*n_ptr) * (*m_ptr) * sizeof(int));
-        for (int idx = 0; idx < (*n_ptr) * (*m_ptr); idx++)
-            scanf("%d", &((*a_mat_ptr)[idx]));
-
-        // Construct matrix b
-        *b_mat_ptr = (int *) malloc((*m_ptr) * (*l_ptr) * sizeof(int));
-        for (int idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
-            scanf("%d", &((*b_mat_ptr)[idx]));
     } else {
         // Receive n, m, and l from rank 0
         MPI_Status status;
         MPI_Recv(n_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(m_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(l_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
-
-        // Construct matrix a
-        *a_mat_ptr = (int *) malloc((*n_ptr) * (*m_ptr) * sizeof(int));
-
-        // Construct matrix b
-        *b_mat_ptr = (int *) malloc((*m_ptr) * (*l_ptr) * sizeof(int));
     }
 
-    // Wait until the matrices are constructed
+    // Wait until all processes have n, m, and l
     MPI_Barrier(MPI_COMM_WORLD);
+
+    // Construct matrix a
+    *a_mat_ptr = (int *) malloc((*n_ptr) * (*m_ptr) * sizeof(int));
+
+    // Construct matrix b
+    *b_mat_ptr = (int *) malloc((*m_ptr) * (*l_ptr) * sizeof(int));
 
     // Split matrix a into regions
     regions = (Region *) malloc(sizeof(Region) * world_size);
@@ -67,8 +57,16 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         regions[idx].offset_row = offset_row;
     }
 
-    // Send matrices
+    // Read and send matrices
     if (world_rank == MASTER) {
+        // Read matrix a
+        for (int idx = 0; idx < (*n_ptr) * (*m_ptr); idx++)
+            scanf("%d", &((*a_mat_ptr)[idx]));
+
+        // Read matrix b
+        for (int idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
+            scanf("%d", &((*b_mat_ptr)[idx]));
+
         MPI_Request requests[world_size - 1];
         MPI_Status statuses[world_size - 1];
 
@@ -77,8 +75,6 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
             MPI_Isend(&((*a_mat_ptr)[regions[idx].offset_row * (*m_ptr)]),
                       regions[idx].num_rows * (*m_ptr),
                       MPI_INT, idx, 0, MPI_COMM_WORLD, &requests[idx - 1]);
-        MPI_Waitall(world_size - 1, requests, statuses);
-
 
         // Send matrix b
         for (int idx = 1; idx < world_size; idx++)
