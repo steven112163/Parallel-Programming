@@ -1,6 +1,7 @@
 #include <mpi.h>
 #include <iostream>
 #include <cstdlib>
+#include <cmath>
 
 typedef struct {
     int n, m, l;
@@ -115,11 +116,11 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
     // Multiply matrices
     MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
     for (int idx = world_rank; idx < n * l; idx += world_size) {
-        int row_idx = (int) idx / l;
+        int row_idx = std::floor(idx / l);
         int col_idx = idx % l;
         int summation = 0;
         for (int middle_idx = 0; middle_idx < m; middle_idx++)
-            summation += a_mat[row_idx * l + middle_idx] * b_mat[middle_idx * l + col_idx];
+            summation += a_mat[row_idx * m + middle_idx] * b_mat[middle_idx * l + col_idx];
         MPI_Put(&summation, 1, MPI_INT, 0, idx, 1, MPI_INT, win);
     }
     MPI_Win_unlock(0, win);
