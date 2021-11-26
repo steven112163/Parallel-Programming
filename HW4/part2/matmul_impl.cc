@@ -1,12 +1,8 @@
 #include <mpi.h>
-#include <iostream>
+#include <cstdio>
 #include <cstdlib>
 
 #define MASTER 0
-
-typedef struct {
-    int n, m, l;
-} Argument;
 
 typedef struct {
     int offset_row, num_rows;
@@ -21,43 +17,34 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    // Setup new data type
-    MPI_Datatype argument_type, old_types[1] = {MPI_INT};
-    int block_counts[1] = {3};
-    MPI_Aint offsets[1] = {0};
-    MPI_Type_create_struct(1, block_counts, offsets, old_types, &argument_type);
-    MPI_Type_commit(&argument_type);
-
     // Read data
-    Argument argument;
     if (world_rank == MASTER) {
         // Read n, m, and l
-        std::cin >> *n_ptr >> *m_ptr >> *l_ptr;
+        scanf("%d %d %d", n_ptr, m_ptr, l_ptr);
 
         // Send n, m, and l to other workers
         MPI_Request req;
-        argument.n = *n_ptr;
-        argument.m = *m_ptr;
-        argument.l = *l_ptr;
-        for (int idx = 1; idx < world_size; idx++)
-            MPI_Isend(&argument, 1, argument_type, idx, 0, MPI_COMM_WORLD, &req);
+        for (int idx = 1; idx < world_size; idx++) {
+            MPI_Isend(n_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
+            MPI_Isend(m_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
+            MPI_Isend(l_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
+        }
 
         // Construct matrix a
         *a_mat_ptr = (int *) malloc((*n_ptr) * (*m_ptr) * sizeof(int));
         for (int idx = 0; idx < (*n_ptr) * (*m_ptr); idx++)
-            std::cin >> (*a_mat_ptr)[idx];
+            scanf("%d", &((*a_mat_ptr)[idx]));
 
         // Construct matrix b
         *b_mat_ptr = (int *) malloc((*m_ptr) * (*l_ptr) * sizeof(int));
         for (int idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
-            std::cin >> (*b_mat_ptr)[idx];
+            scanf("%d", &((*b_mat_ptr)[idx]));
     } else {
         // Receive n, m, and l from rank 0
         MPI_Status status;
-        MPI_Recv(&argument, 1, argument_type, MASTER, 0, MPI_COMM_WORLD, &status);
-        *n_ptr = argument.n;
-        *m_ptr = argument.m;
-        *l_ptr = argument.l;
+        MPI_Recv(n_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(m_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(l_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
 
         // Construct matrix a
         *a_mat_ptr = (int *) malloc((*n_ptr) * (*m_ptr) * sizeof(int));
@@ -66,17 +53,8 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         *b_mat_ptr = (int *) malloc((*m_ptr) * (*l_ptr) * sizeof(int));
     }
 
-    // Free new data type
-    MPI_Type_free(&argument_type);
-
     // Wait until the matrices are constructed
     MPI_Barrier(MPI_COMM_WORLD);
-
-    // Setup new data type
-    MPI_Datatype region_type;
-    block_counts[0] = 2;
-    MPI_Type_create_struct(1, block_counts, offsets, old_types, &region_type);
-    MPI_Type_commit(&region_type);
 
     // Split matrix a into regions
     regions = (Region *) malloc(sizeof(Region) * world_size);
@@ -116,12 +94,6 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         // Receive matrix b from rank 0
         MPI_Recv(*b_mat_ptr, (*m_ptr) * (*l_ptr), MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
     }
-
-    // Free new data type
-    MPI_Type_free(&region_type);
-
-    // Wait until all processes have received the matrices
-    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void matrix_multiply(const int n, const int m, const int l, const int *a_mat, const int *b_mat) {
@@ -167,9 +139,9 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
     // Print the result and destruct it
     if (world_rank == MASTER) {
         for (int idx = 0; idx < n * l; idx++) {
-            std::cout << result[idx] << " ";
+            printf("%d ", result[idx]);
             if (idx % l == l - 1)
-                std::cout << std::endl;
+                printf("\n");
         }
 
         MPI_Free_mem(result);
