@@ -47,11 +47,12 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     *b_mat_ptr = (int *) malloc((*m_ptr) * (*l_ptr) * sizeof(int));
 
     // Split matrix a into regions
-    regions = (Region *) malloc(sizeof(Region) * world_size);
-    int average_rows = (int) (*n_ptr) / world_size;
-    int remaining_rows = (*n_ptr) % world_size;
+    int num_workers = (world_size - 1);
+    regions = (Region *) malloc(sizeof(Region) * num_workers);
+    int average_rows = (int) (*n_ptr) / num_workers;
+    int remaining_rows = (*n_ptr) % num_workers;
     int offset_row = 0;
-    for (int idx = 0; idx < world_size; idx++) {
+    for (int idx = 0; idx < num_workers; idx++) {
         regions[idx].num_rows = (idx < remaining_rows) ? average_rows + 1 : average_rows;
         offset_row += (idx > 0) ? regions[idx - 1].num_rows : 0;
         regions[idx].offset_row = offset_row;
@@ -70,10 +71,10 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         MPI_Request req;
 
         // Send region of matrix a
-        for (int idx = 1; idx < world_size; idx++)
+        for (int idx = 0; idx < num_workers; idx++)
             MPI_Isend(&((*a_mat_ptr)[regions[idx].offset_row * (*m_ptr)]),
                       regions[idx].num_rows * (*m_ptr),
-                      MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
+                      MPI_INT, idx + 1, 0, MPI_COMM_WORLD, &req);
 
         // Send matrix b
         for (int idx = 1; idx < world_size; idx++)
@@ -82,8 +83,8 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         MPI_Status status;
 
         // Receive region of matrix a from rank 0
-        MPI_Recv(&((*a_mat_ptr)[regions[world_rank].offset_row * (*m_ptr)]),
-                 regions[world_rank].num_rows * (*m_ptr),
+        MPI_Recv(&((*a_mat_ptr)[regions[world_rank - 1].offset_row * (*m_ptr)]),
+                 regions[world_rank - 1].num_rows * (*m_ptr),
                  MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
 
         // Receive matrix b from rank 0
@@ -112,29 +113,28 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
     } else {
         MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win);
         result = (int *) malloc(n * l * sizeof(int));
-    }
 
-    // Multiply matrices
-    for (int row_idx = regions[world_rank].offset_row;
-         row_idx < regions[world_rank].offset_row + regions[world_rank].num_rows;
-         row_idx++) {
-        for (int col_idx = 0; col_idx < l; col_idx++) {
-            result[row_idx * l + col_idx] = 0;
-            for (int middle_idx = 0; middle_idx < m; middle_idx++)
-                result[row_idx * l + col_idx] += a_mat[row_idx * m + middle_idx] * b_mat[middle_idx * l + col_idx];
+        // Multiply matrices
+        for (int row_idx = regions[world_rank - 1].offset_row;
+             row_idx < regions[world_rank - 1].offset_row + regions[world_rank - 1].num_rows;
+             row_idx++) {
+            for (int col_idx = 0; col_idx < l; col_idx++) {
+                result[row_idx * l + col_idx] = 0;
+                for (int middle_idx = 0; middle_idx < m; middle_idx++)
+                    result[row_idx * l + col_idx] += a_mat[row_idx * m + middle_idx] * b_mat[middle_idx * l + col_idx];
+            }
         }
-    }
 
-    // Send the result to MASTER
-    if (world_rank != MASTER) {
+        // Send the result to MASTER
         MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
-        MPI_Put(&result[regions[world_rank].offset_row * l],
-                regions[world_rank].num_rows * l,
+        MPI_Put(&result[regions[world_rank - 1].offset_row * l],
+                regions[world_rank - 1].num_rows * l,
                 MPI_INT, MASTER,
-                regions[world_rank].offset_row * l,
-                regions[world_rank].num_rows * l,
+                regions[world_rank - 1].offset_row * l,
+                regions[world_rank - 1].num_rows * l,
                 MPI_INT, win);
         MPI_Win_unlock(0, win);
+        delete[] result;
     }
 
     // Wait for all processes to finish multiplying matrices
@@ -149,8 +149,6 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
         }
 
         MPI_Free_mem(result);
-    } else {
-        delete[] result;
     }
 }
 
