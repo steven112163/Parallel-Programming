@@ -67,18 +67,17 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         for (int idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
             scanf("%d", &((*b_mat_ptr)[idx]));
 
-        MPI_Request requests[world_size - 1];
-        MPI_Status statuses[world_size - 1];
+        MPI_Request req;
 
         // Send region of matrix a
         for (int idx = 1; idx < world_size; idx++)
             MPI_Isend(&((*a_mat_ptr)[regions[idx].offset_row * (*m_ptr)]),
                       regions[idx].num_rows * (*m_ptr),
-                      MPI_INT, idx, 0, MPI_COMM_WORLD, &requests[idx - 1]);
+                      MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
 
         // Send matrix b
         for (int idx = 1; idx < world_size; idx++)
-            MPI_Isend(*b_mat_ptr, (*m_ptr) * (*l_ptr), MPI_INT, idx, 0, MPI_COMM_WORLD, &requests[idx - 1]);
+            MPI_Isend(*b_mat_ptr, (*m_ptr) * (*l_ptr), MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
     } else {
         MPI_Status status;
 
@@ -112,22 +111,31 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
                        &win);
     } else {
         MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+        result = (int *) malloc(n * l * sizeof(int));
     }
 
     // Multiply matrices
-    MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
-    int summation;
     for (int row_idx = regions[world_rank].offset_row;
          row_idx < regions[world_rank].offset_row + regions[world_rank].num_rows;
          row_idx++) {
         for (int col_idx = 0; col_idx < l; col_idx++) {
-            summation = 0;
+            result[row_idx * l + col_idx] = 0;
             for (int middle_idx = 0; middle_idx < m; middle_idx++)
-                summation += a_mat[row_idx * m + middle_idx] * b_mat[middle_idx * l + col_idx];
-            MPI_Put(&summation, 1, MPI_INT, MASTER, row_idx * l + col_idx, 1, MPI_INT, win);
+                result[row_idx * l + col_idx] += a_mat[row_idx * m + middle_idx] * b_mat[middle_idx * l + col_idx];
         }
     }
-    MPI_Win_unlock(0, win);
+
+    // Send the result to MASTER
+    if (world_rank != MASTER) {
+        MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
+        MPI_Put(&result[regions[world_rank].offset_row * l],
+                regions[world_rank].num_rows * l,
+                MPI_INT, MASTER,
+                regions[world_rank].offset_row * l,
+                regions[world_rank].num_rows * l,
+                MPI_INT, win);
+        MPI_Win_unlock(0, win);
+    }
 
     // Wait for all processes to finish multiplying matrices
     MPI_Barrier(MPI_COMM_WORLD);
@@ -141,6 +149,8 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
         }
 
         MPI_Free_mem(result);
+    } else {
+        delete[] result;
     }
 }
 
