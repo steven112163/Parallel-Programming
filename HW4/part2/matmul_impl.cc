@@ -60,6 +60,8 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
 
     // Dummy variables
     int idx, worker_idx;
+    MPI_Request req;
+    MPI_Status status;
 
     // Read and send n, m, and l
     if (world_rank == MASTER) {
@@ -69,7 +71,6 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         get_input(l_ptr);
 
         // Send n, m, and l to other workers
-        MPI_Request req;
         for (idx = 1; idx < world_size; idx++) {
             MPI_Isend(n_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
             MPI_Isend(m_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
@@ -77,14 +78,10 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         }
     } else {
         // Receive n, m, and l from rank 0
-        MPI_Status status;
         MPI_Recv(n_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(m_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(l_ptr, 1, MPI_INT, MASTER, 0, MPI_COMM_WORLD, &status);
     }
-
-    // Wait until all processes have n, m, and l
-    MPI_Barrier(MPI_COMM_WORLD);
 
     // Construct matrix a
     *a_mat_ptr = (int *) malloc((*n_ptr) * (*m_ptr) * sizeof(int));
@@ -114,8 +111,6 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         for (idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
             get_input(&((*b_mat_ptr)[idx]));
 
-        MPI_Request req;
-
         // Send region of matrix a
         for (worker_idx = 0; worker_idx < num_workers; worker_idx++)
             MPI_Isend(&((*a_mat_ptr)[regions[worker_idx].offset_row * (*m_ptr)]),
@@ -126,8 +121,6 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
         for (idx = 1; idx < world_size; idx++)
             MPI_Isend(*b_mat_ptr, (*m_ptr) * (*l_ptr), MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
     } else {
-        MPI_Status status;
-
         // Receive region of matrix a from rank 0
         MPI_Recv(&((*a_mat_ptr)[regions[world_rank - 1].offset_row * (*m_ptr)]),
                  regions[world_rank - 1].num_rows * (*m_ptr),
