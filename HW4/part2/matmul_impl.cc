@@ -58,6 +58,9 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+    // Dummy variables
+    int idx, worker_idx;
+
     // Read and send n, m, and l
     if (world_rank == MASTER) {
         // Read n, m, and l
@@ -67,7 +70,7 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
 
         // Send n, m, and l to other workers
         MPI_Request req;
-        for (int idx = 1; idx < world_size; idx++) {
+        for (idx = 1; idx < world_size; idx++) {
             MPI_Isend(n_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
             MPI_Isend(m_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
             MPI_Isend(l_ptr, 1, MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
@@ -95,7 +98,7 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     int average_rows = (int) (*n_ptr) / num_workers;
     int remaining_rows = (*n_ptr) % num_workers;
     int offset_row = 0;
-    for (int worker_idx = 0; worker_idx < num_workers; worker_idx++) {
+    for (worker_idx = 0; worker_idx < num_workers; worker_idx++) {
         regions[worker_idx].num_rows = (worker_idx < remaining_rows) ? average_rows + 1 : average_rows;
         offset_row += (worker_idx > 0) ? regions[worker_idx - 1].num_rows : 0;
         regions[worker_idx].offset_row = offset_row;
@@ -104,23 +107,23 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     // Read and send matrices
     if (world_rank == MASTER) {
         // Read matrix a
-        for (int idx = 0; idx < (*n_ptr) * (*m_ptr); idx++)
+        for (idx = 0; idx < (*n_ptr) * (*m_ptr); idx++)
             get_input(&((*a_mat_ptr)[idx]));
 
         // Read matrix b
-        for (int idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
+        for (idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
             get_input(&((*b_mat_ptr)[idx]));
 
         MPI_Request req;
 
         // Send region of matrix a
-        for (int worker_idx = 0; worker_idx < num_workers; worker_idx++)
+        for (worker_idx = 0; worker_idx < num_workers; worker_idx++)
             MPI_Isend(&((*a_mat_ptr)[regions[worker_idx].offset_row * (*m_ptr)]),
                       regions[worker_idx].num_rows * (*m_ptr),
                       MPI_INT, worker_idx + 1, 0, MPI_COMM_WORLD, &req);
 
         // Send matrix b
-        for (int idx = 1; idx < world_size; idx++)
+        for (idx = 1; idx < world_size; idx++)
             MPI_Isend(*b_mat_ptr, (*m_ptr) * (*l_ptr), MPI_INT, idx, 0, MPI_COMM_WORLD, &req);
     } else {
         MPI_Status status;
