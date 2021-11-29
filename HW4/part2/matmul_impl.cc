@@ -158,12 +158,11 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
         int end_row = regions[world_rank - 1].offset_row + regions[world_rank - 1].num_rows;
         int row_block, col_block, middle_block, row_idx, col_idx, middle_idx;
         for (row_block = start_row; row_block < end_row; row_block += BLOCK_SIZE)
-            for (col_block = 0; col_block < l; col_block += BLOCK_SIZE)
-                for (middle_block = 0; middle_block < m; middle_block += BLOCK_SIZE)
+            for (middle_block = 0; middle_block < m; middle_block += BLOCK_SIZE)
+                for (col_block = 0; col_block < l; col_block += BLOCK_SIZE)
                     for (row_idx = row_block; row_idx < min(end_row, row_block + BLOCK_SIZE); row_idx++)
-                        for (col_idx = col_block; col_idx < min(l, col_block + BLOCK_SIZE); col_idx++)
-                            for (middle_idx = middle_block;
-                                 middle_idx < min(m, middle_block + BLOCK_SIZE); middle_idx++)
+                        for (middle_idx = middle_block; middle_idx < min(m, middle_block + BLOCK_SIZE); middle_idx++)
+                            for (col_idx = col_block; col_idx < min(l, col_block + BLOCK_SIZE); col_idx++)
                                 result[row_idx * l + col_idx] +=
                                         a_mat[row_idx * m + middle_idx] * b_mat[middle_idx * l + col_idx];
 
