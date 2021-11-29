@@ -155,7 +155,7 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
                        &win);
     } else {
         MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win);
-        result = (int *) malloc(n * l * sizeof(int));
+        result = (int *) calloc(n * l, sizeof(int));
 
         // Multiply matrices
         int start_row = regions[world_rank - 1].offset_row;
@@ -165,13 +165,11 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
             for (col_block = 0; col_block < l; col_block += BLOCK_SIZE)
                 for (middle_block = 0; middle_block < m; middle_block += BLOCK_SIZE)
                     for (row_idx = row_block; row_idx < min(end_row, row_block + BLOCK_SIZE); row_idx++)
-                        for (col_idx = col_block; col_idx < min(l, col_block + BLOCK_SIZE); col_idx++) {
-                            result[row_idx * l + col_idx] = 0;
+                        for (col_idx = col_block; col_idx < min(l, col_block + BLOCK_SIZE); col_idx++)
                             for (middle_idx = middle_block;
                                  middle_idx < min(m, middle_block + BLOCK_SIZE); middle_idx++)
                                 result[row_idx * l + col_idx] +=
                                         a_mat[row_idx * m + middle_idx] * b_mat[middle_idx * l + col_idx];
-                        }
 
         // Send the result to MASTER
         MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
