@@ -3,7 +3,7 @@
 #include <cstdlib>
 
 #define MASTER 0
-#define BLOCK_SIZE 128
+#define BLOCK_SIZE 64
 #define min(a, b) ((a < b) ? a : b)
 
 typedef struct {
@@ -12,6 +12,20 @@ typedef struct {
 
 // Regions of matrix a
 Region *regions;
+
+void get_input(int *input) {
+    *input = 0;
+    char ch = getchar_unlocked();
+    if ('0' <= ch && ch <= '9')
+        *input = *input * 10 + (ch - '0');
+    while (true) {
+        ch = getchar_unlocked();
+        if ('0' <= ch && ch <= '9')
+            *input = *input * 10 + (ch - '0');
+        else
+            break;
+    }
+}
 
 void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int **b_mat_ptr) {
     // Get rank and size
@@ -22,7 +36,9 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     // Read and send n, m, and l
     if (world_rank == MASTER) {
         // Read n, m, and l
-        scanf("%d %d %d", n_ptr, m_ptr, l_ptr);
+        get_input(n_ptr);
+        get_input(m_ptr);
+        get_input(l_ptr);
 
         // Send n, m, and l to other workers
         MPI_Request req;
@@ -64,11 +80,11 @@ void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int
     if (world_rank == MASTER) {
         // Read matrix a
         for (int idx = 0; idx < (*n_ptr) * (*m_ptr); idx++)
-            scanf("%d", &((*a_mat_ptr)[idx]));
+            get_input(&((*a_mat_ptr)[idx]));
 
         // Read matrix b
         for (int idx = 0; idx < (*m_ptr) * (*l_ptr); idx++)
-            scanf("%d", &((*b_mat_ptr)[idx]));
+            get_input(&((*b_mat_ptr)[idx]));
 
         MPI_Request req;
 
