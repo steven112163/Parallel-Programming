@@ -17,14 +17,39 @@ void get_input(int *input) {
     *input = 0;
     char ch = getchar_unlocked();
     if ('0' <= ch && ch <= '9')
-        *input = *input * 10 + (ch - '0');
+        *input = (*input << 3) + (*input << 1) + (ch - '0');
     while (true) {
         ch = getchar_unlocked();
         if ('0' <= ch && ch <= '9')
-            *input = *input * 10 + (ch - '0');
+            *input = (*input << 3) + (*input << 1) + (ch - '0');
         else
             break;
     }
+}
+
+void write_output(int *output) {
+    if (*output == 0) {
+        putchar_unlocked('0');
+        return;
+    }
+
+    int reversed = *output, zero_count = 0;
+    while (reversed % 10 == 0) {
+        zero_count++;
+        reversed /= 10;
+    }
+
+    reversed = 0;
+    while (*output != 0) {
+        reversed = (reversed << 3) + (reversed << 1) + *output % 10;
+        *output /= 10;
+    }
+    while (reversed != 0) {
+        putchar_unlocked(reversed % 10 + '0');
+        reversed /= 10;
+    }
+    while (zero_count--)
+        putchar_unlocked('0');
 }
 
 void construct_matrices(int *n_ptr, int *m_ptr, int *l_ptr, int **a_mat_ptr, int **b_mat_ptr) {
@@ -166,9 +191,10 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
     // Print the result and destruct it
     if (world_rank == MASTER) {
         for (int idx = 0; idx < n * l; idx++) {
-            printf("%d ", result[idx]);
+            write_output(&(result[idx]));
+            putchar_unlocked(' ');
             if (idx % l == l - 1)
-                printf("\n");
+                putchar_unlocked('\n');
         }
 
         MPI_Free_mem(result);
