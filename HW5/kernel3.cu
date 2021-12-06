@@ -60,7 +60,7 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
     cudaMallocPitch(&d_data, &pitch, resX * sizeof(int), resY);
 
     dim3 threads_per_block(BLOCK_X, BLOCK_Y);
-    dim3 num_of_blocks(resX / threads_per_block.x / RANGE, resY / threads_per_block.y);
+    dim3 num_of_blocks(resX / threads_per_block.x / RANGE_X, resY / threads_per_block.y);
     mandelKernel<<<num_of_blocks, threads_per_block>>>(d_data,
                                                        stepX, stepY,
                                                        lowerX, lowerY,
