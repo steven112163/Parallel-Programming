@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define BLOCK_X 32
+#define BLOCK_Y 30
+
 __global__ void mandelKernel(int *d_data,
                              int width,
                              float stepX, float stepY,
@@ -44,9 +47,9 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
     int *d_data;
     cudaMalloc(&d_data, size);
 
-    dim3 threads_per_block(32, 32);
+    dim3 threads_per_block(BLOCK_X, BLOCK_Y);
     dim3 num_of_blocks(resX / threads_per_block.x, resY / threads_per_block.y);
-    mandelKernel<<<num_of_blocks, threads_per_block>>>(d_data, resX, stepX, stepY, lowerX, lowerY,maxIterations);
+    mandelKernel<<<num_of_blocks, threads_per_block>>>(d_data, resX, stepX, stepY, lowerX, lowerY, maxIterations);
 
     cudaMemcpy(img, d_data, size, cudaMemcpyDeviceToHost);
     cudaFree(d_data);

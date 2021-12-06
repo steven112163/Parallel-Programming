@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define BLOCK_X 32
+#define BLOCK_Y 30
+
 __global__ void mandelKernel(int *d_data,
                              float stepX, float stepY,
                              float lowerX, float lowerY,
@@ -21,13 +24,14 @@ __global__ void mandelKernel(int *d_data,
     float z_im = c_im;
 
     int i;
+    float new_re, new_im;
     for (i = 0; i < maxIteration; ++i) {
 
         if (z_re * z_re + z_im * z_im > 4.f)
             break;
 
-        float new_re = z_re * z_re - z_im * z_im;
-        float new_im = 2.f * z_re * z_im;
+        new_re = z_re * z_re - z_im * z_im;
+        new_im = 2.f * z_re * z_im;
         z_re = c_re + new_re;
         z_im = c_im + new_im;
     }
@@ -47,7 +51,7 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
     cudaHostAlloc(&h_data, size, cudaHostAllocMapped);
     cudaMallocPitch(&d_data, &pitch, resX * sizeof(int), resY);
 
-    dim3 threads_per_block(32, 32);
+    dim3 threads_per_block(BLOCK_X, BLOCK_Y);
     dim3 num_of_blocks(resX / threads_per_block.x, resY / threads_per_block.y);
     mandelKernel<<<num_of_blocks, threads_per_block>>>(d_data,
                                                        stepX, stepY,

@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BLOCK_X 25
-#define BLOCK_Y 25
+#define BLOCK_X 32
+#define BLOCK_Y 30
 
 __global__ void mandelKernel(int *d_data,
                              int width,
