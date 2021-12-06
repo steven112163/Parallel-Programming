@@ -2,9 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define RANGE 8
+// 1600 / 32 = 50
 #define BLOCK_X 32
+// 1200 / 30 = 40
 #define BLOCK_Y 30
+#define RANGE_X 10
+#define RANGE_Y 10
 
 __global__ void mandelKernel(int *d_data,
                              float stepX, float stepY,
