@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 __global__ void mandelKernel(int *d_data,
-                             int width,
                              float stepX, float stepY,
                              float lowerX, float lowerY,
                              int maxIteration,
@@ -51,7 +50,6 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
     dim3 threads_per_block(32, 32);
     dim3 num_of_blocks(resX / threads_per_block.x, resY / threads_per_block.y);
     mandelKernel<<<num_of_blocks, threads_per_block>>>(d_data,
-                                                       resX,
                                                        stepX, stepY,
                                                        lowerX, lowerY,
                                                        maxIterations,
