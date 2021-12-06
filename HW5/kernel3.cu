@@ -7,7 +7,6 @@
 // 1200 / 30 = 40
 #define BLOCK_Y 30
 #define RANGE_X 10
-#define RANGE_Y 10
 
 __global__ void mandelKernel(int *d_data,
                              float stepX, float stepY,
@@ -20,19 +19,20 @@ __global__ void mandelKernel(int *d_data,
     // float x = lowerX + thisX * stepX;
     // float y = lowerY + thisY * stepY;
 
-    int thisX = blockIdx.x * blockDim.x + threadIdx.x;
+    int thisX = (blockIdx.x * blockDim.x + threadIdx.x) * range;
     int thisY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    float c_re = lowerX + thisX * stepX;
-    float c_im = lowerY + thisY * stepY;
-    float z_re = c_re;
-    float z_im = c_im;
-
     int *row = (int *) ((char *) d_data + thisY * pitch);
+
+    float c_re, z_re;
+    float c_im = lowerY + thisY * stepY;
+    float z_im = c_im;
 
     int i;
     float new_re, new_im;
     for (int idx = 0; idx < range; idx++) {
+        c_re = lowerX + (thisX + idx) * stepX;
+        z_re = c_re;
         for (i = 0; i < maxIteration; ++i) {
 
             if (z_re * z_re + z_im * z_im > 4.f)
