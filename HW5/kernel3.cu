@@ -66,7 +66,7 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
                                                        lowerX, lowerY,
                                                        maxIterations,
                                                        pitch,
-                                                       RANGE);
+                                                       RANGE_X);
 
     cudaMemcpy2D(h_data, resX * sizeof(int), d_data, pitch, resX * sizeof(int), resY, cudaMemcpyDeviceToHost);
     memcpy(img, h_data, size);
