@@ -29,6 +29,7 @@ __global__ void mandelKernel(int *d_data,
     int res;
     int *row;
     for (int j = 0; j < range; j++) {
+        row = (int *) ((char *) d_data + (thisY + j) * pitch);
         for (int i = 0; i < range; i++) {
             c_re = lowerX + (thisX + i) * stepX;
             c_im = lowerY + (thisY + j) * stepY;
@@ -45,7 +46,6 @@ __global__ void mandelKernel(int *d_data,
                 z_im = c_im + new_im;
             }
 
-            row = (int *) ((char *) d_data + (thisY + j) * pitch);
             row[thisX + i] = res;
         }
     }
