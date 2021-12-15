@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BLOCK_X 32
-#define BLOCK_Y 30
+#define NUM_BLOCKS 8
+#define NUM_STREAMS 10
 
 __global__ void mandelKernel(int *d_data,
-                             int width,
+                             int width, int offset,
                              float stepX, float stepY,
                              float lowerX, float lowerY,
                              int maxIteration) {
@@ -15,27 +15,24 @@ __global__ void mandelKernel(int *d_data,
     // float x = lowerX + thisX * stepX;
     // float y = lowerY + thisY * stepY;
 
-    int thisX = blockIdx.x * blockDim.x + threadIdx.x;
-    int thisY = blockIdx.y * blockDim.y + threadIdx.y;
+    int2 coord = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y + offset);
 
-    float c_re = lowerX + thisX * stepX;
-    float c_im = lowerY + thisY * stepY;
-    float z_re = c_re;
-    float z_im = c_im;
+    float2 c = make_float2(lowerX + coord.x * stepX, lowerY + coord.y * stepY);
+    float2 z = c;
+    float2 new_z;
 
     int i;
-    for (i = 0; i < maxIteration; ++i) {
-
-        if (z_re * z_re + z_im * z_im > 4.f)
+    for (i = 0; i < maxIteration; i++) {
+        if (z.x * z.x + z.y * z.y > 4.f)
             break;
 
-        float new_re = z_re * z_re - z_im * z_im;
-        float new_im = 2.f * z_re * z_im;
-        z_re = c_re + new_re;
-        z_im = c_im + new_im;
+        new_z.x = z.x * z.x - z.y * z.y;
+        new_z.y = 2.f * z.x * z.y;
+        z.x = c.x + new_z.x;
+        z.y = c.y + new_z.y;
     }
 
-    d_data[thisX + thisY * width] = i;
+    d_data[coord.x + coord.y * width] = i;
 }
 
 // Host front-end function that allocates the memory and launches the GPU kernel
@@ -46,11 +43,27 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
     int size = resX * resY * sizeof(int);
     int *d_data;
     cudaMalloc(&d_data, size);
+    cudaHostRegister(img, size, cudaHostRegisterPortable);
 
-    dim3 threads_per_block(BLOCK_X, BLOCK_Y);
-    dim3 num_of_blocks(resX / threads_per_block.x, resY / threads_per_block.y);
-    mandelKernel<<<num_of_blocks, threads_per_block>>>(d_data, resX, stepX, stepY, lowerX, lowerY, maxIterations);
+    cudaStream_t streams[NUM_STREAMS];
+    for (int i = 0; i < NUM_STREAMS; i++)
+        cudaStreamCreate(&streams[i]);
 
-    cudaMemcpy(img, d_data, size, cudaMemcpyDeviceToHost);
+    int grid_step = resY / NUM_STREAMS;
+    int grid_size = size / NUM_STREAMS;
+
+    dim3 block(NUM_BLOCKS, NUM_BLOCKS);
+    dim3 grid(resX / NUM_BLOCKS, grid_step / NUM_BLOCKS);
+    int offset = 0;
+    for (int i = 0; i < NUM_STREAMS; i++) {
+        mandelKernel<<<grid, block, 0, streams[i]>>>(d_data, resX, offset, stepX, stepY, lowerX, lowerY, maxIterations);
+        cudaMemcpyAsync(img + resX * offset, d_data + resX * offset, grid_size, cudaMemcpyDeviceToHost, streams[i]);
+        offset += grid_step;
+    }
+
+    cudaDeviceSynchronize();
+    for (int i = 0; i < NUM_STREAMS; i++)
+        cudaStreamDestroy(streams[i]);
+    cudaHostUnregister(img);
     cudaFree(d_data);
 }
