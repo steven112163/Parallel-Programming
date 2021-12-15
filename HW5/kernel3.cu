@@ -2,10 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// 1600 / 32 = 50
-#define BLOCK_X 32
-// 1200 / 30 = 40
-#define BLOCK_Y 30
+#define NUM_THREADS 8
 #define RANGE 5
 
 __global__ void mandelKernel(int *d_data,
@@ -62,14 +59,14 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
     cudaHostAlloc(&h_data, size, cudaHostAllocMapped);
     cudaMallocPitch(&d_data, &pitch, resX * sizeof(int), resY);
 
-    dim3 threads_per_block(BLOCK_X, BLOCK_Y);
-    dim3 num_of_blocks(resX / threads_per_block.x / RANGE, resY / threads_per_block.y / RANGE);
-    mandelKernel<<<num_of_blocks, threads_per_block>>>(d_data,
-                                                       stepX, stepY,
-                                                       lowerX, lowerY,
-                                                       maxIterations,
-                                                       pitch,
-                                                       RANGE);
+    dim3 block(NUM_THREADS, NUM_THREADS);
+    dim3 grid(resX / NUM_THREADS / RANGE, resY / NUM_THREADS / RANGE);
+    mandelKernel<<<grid, block>>>(d_data,
+                                  stepX, stepY,
+                                  lowerX, lowerY,
+                                  maxIterations,
+                                  pitch,
+                                  RANGE);
 
     cudaMemcpy2D(h_data, resX * sizeof(int), d_data, pitch, resX * sizeof(int), resY, cudaMemcpyDeviceToHost);
     memcpy(img, h_data, size);
