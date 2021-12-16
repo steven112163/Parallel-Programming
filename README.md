@@ -8,6 +8,7 @@
 * clang++ >= 11
 * libomp5
 * mpi4
+* cuda10.1
 
 
 
@@ -18,3 +19,4 @@
 |HW2|Multi-thread|
 |HW3|OpenMP|
 |HW4|MPI|
+|HW5|CUDA|
