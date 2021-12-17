@@ -3,7 +3,7 @@
 #include "hostFE.h"
 #include "helper.h"
 
-#define LOCAL_SIZE 8
+#define LOCAL_SIZE 25
 
 void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
             float *inputImage, float *outputImage, cl_device_id *device,
@@ -44,7 +44,7 @@ void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
     status = clEnqueueNDRangeKernel(command_queue, kernel, 2, 0, global_work_size, local_work_size, 0, NULL, NULL);
 
     // Copy data from device to host
-    status = clEnqueueReadBuffer(command_queue, d_output_image, CL_TRUE, 0, image_size, (void *) outputImage, NULL,
+    status = clEnqueueReadBuffer(command_queue, d_output_image, CL_TRUE, 0, image_size, (void *) outputImage, 0,
                                  NULL, NULL);
 
     // release opencl object
