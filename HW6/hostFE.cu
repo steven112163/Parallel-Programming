@@ -7,14 +7,16 @@ extern "C" {
 }
 
 #define NUM_THREADS 25
+#define NUM_STREAMS 4
 
 __global__ void convKernel(int filter_width,
                            float *filter,
+                           int offset,
                            int image_height,
                            int image_width,
                            float *input_image,
                            float *output_image) {
-    const int2 coord = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    const int2 coord = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y + offset);
 
     int half_filter_size = filter_width / 2;
     float sum = 0.0f;
@@ -50,15 +52,29 @@ void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
     cudaMemcpy(d_filter, filter, filter_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_input_image, inputImage, image_size, cudaMemcpyHostToDevice);
 
-    dim3 block(NUM_THREADS, NUM_THREADS);
-    dim3 grid(imageWidth / NUM_THREADS, imageHeight / NUM_THREADS);
-    convKernel<<<grid, block>>>(filterWidth, d_filter, imageHeight, imageWidth, d_input_image, d_output_image);
+    // Setup streams
+    cudaStream_t streams[NUM_STREAMS];
+    for (int i = 0; i < NUM_STREAMS; i++)
+        cudaStreamCreate(&streams[i]);
 
-    // Copy output_image from device to host
-    cudaDeviceSynchronize();
-    cudaMemcpy(outputImage, d_output_image, image_size, cudaMemcpyDeviceToHost);
+    int grid_step = imageHeight / NUM_STREAMS;
+    int grid_size = image_size / NUM_STREAMS;
+
+    dim3 block(NUM_THREADS, NUM_THREADS);
+    dim3 grid(imageWidth / NUM_THREADS, grid_step / NUM_THREADS);
+    int offset = 0;
+    for (int i = 0; i < NUM_STREAMS; i++) {
+        convKernel<<<grid, block, 0, streams[i]>>>(filterWidth, d_filter, offset, imageHeight, imageWidth,
+                                                   d_input_image, d_output_image);
+        cudaMemcpyAsync(outputImage + imageWidth * offset, d_output_image + imageWidth * offset, grid_size,
+                        cudaMemcpyDeviceToHost, streams[i]);
+        offset += grid_step;
+    }
 
     // Free memory
+    cudaDeviceSynchronize();
+    for (int i = 0; i < NUM_STREAMS; i++)
+        cudaStreamDestroy(streams[i]);
     cudaHostUnregister(outputImage);
     cudaFree(d_filter);
     cudaFree(d_input_image);
