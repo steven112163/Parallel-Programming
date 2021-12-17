@@ -11,14 +11,14 @@ OBJS = main.o bmpfuncs.o serialConv.o helper.o
 
 conv: $(OBJS)
 	$(CC) -c $(FLAGS) hostFE.c -o hostFE.o
-	$(CC) -o $@ hostFE.o $(OBJS) $(FLAGS)
-
-cuda: $(OBJS)
-	$(NVCC) $(CUDA_COMPILE_FLAGS) -c hostFE.cu -o hostFE.o
-	$(NVCC) $(CUDA_LINK_FLAGS) -o conv hostFE.o $(OBJS) -lOpenCL
+	$(CC) -o $@ $(OBJS) hostFE.o $(FLAGS)
 
 %.o: %.c
 	$(CC) -c $(FLAGS) $< -o $@
+
+cuda: $(OBJS)
+	$(NVCC) $(CUDA_COMPILE_FLAGS) -c hostFE.cu -o hostFE.o
+	$(NVCC) $(CUDA_LINK_FLAGS) -o conv $(OBJS) hostFE.o -lOpenCL
 
 clean:
 	rm -f conv *.o output.bmp ref.bmp

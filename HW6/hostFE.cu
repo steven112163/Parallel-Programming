@@ -1,7 +1,10 @@
 #include <cuda.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+extern "C" {
 #include "hostFE.h"
+}
 
 #define NUM_THREADS 25
 
@@ -28,6 +31,7 @@ __global__ void convKernel(int filter_width,
     output_image[coord.y * image_width + coord.x] = sum;
 }
 
+extern "C"
 void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
             float *inputImage, float *outputImage, cl_device_id *device,
             cl_context *context, cl_program *program) {
