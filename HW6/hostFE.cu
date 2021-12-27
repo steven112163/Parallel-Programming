@@ -16,15 +16,15 @@ __global__ void convKernel(int filter_width,
                            int image_width,
                            float *input_image,
                            float *output_image) {
-    const int2 coord = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y + offset);
+    int2 coord = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y + offset);
 
     int half_filter_size = filter_width / 2;
     float sum = 0.0f;
     int row, col;
-    for (row = -half_filter_size; row < half_filter_size + 1; row++) {
-        for (col = -half_filter_size; col < half_filter_size + 1; col++) {
-            if (coord.y + row > -1 && coord.y + row < image_height &&
-                coord.x + col > -1 && coord.x + col < image_width) {
+    for (row = -half_filter_size; row <= half_filter_size; row++) {
+        for (col = -half_filter_size; col <= half_filter_size; col++) {
+            if (coord.y + row >= 0 && coord.y + row < image_height &&
+                coord.x + col >= 0 && coord.x + col < image_width) {
                 sum += input_image[(coord.y + row) * image_width + coord.x + col] *
                        filter[(row + half_filter_size) * filter_width + col + half_filter_size];
             }
