@@ -16,21 +16,22 @@ __global__ void convKernel(int filter_width,
                            int image_width,
                            float *input_image,
                            float *output_image) {
-    int2 coord = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y + offset);
+    int thisX = blockIdx.x * blockDim.x + threadIdx.x;
+    int thisY = blockIdx.y * blockDim.y + threadIdx.y + offset;
 
-    int half_filter_size = filter_width / 2;
+    int half_filter_size = filter_width >> 1;
     float sum = 0.0f;
     int row, col;
     for (row = -half_filter_size; row <= half_filter_size; row++) {
         for (col = -half_filter_size; col <= half_filter_size; col++) {
-            if (coord.y + row >= 0 && coord.y + row < image_height &&
-                coord.x + col >= 0 && coord.x + col < image_width) {
-                sum += input_image[(coord.y + row) * image_width + coord.x + col] *
+            if (thisY + row >= 0 && thisY + row < image_height &&
+                thisX + col >= 0 && thisX + col < image_width) {
+                sum += input_image[(thisY + row) * image_width + thisX + col] *
                        filter[(row + half_filter_size) * filter_width + col + half_filter_size];
             }
         }
     }
-    output_image[coord.y * image_width + coord.x] = sum;
+    output_image[thisY * image_width + thisX] = sum;
 }
 
 extern "C"

@@ -10,7 +10,6 @@ void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
             cl_context *context, cl_program *program) {
     int filter_size = filterWidth * filterWidth * sizeof(float);
     int image_size = imageWidth * imageHeight * sizeof(float);
-    int halfFilterSize = filterWidth >> 1;
 
     // Create command queue
     cl_command_queue command_queue = clCreateCommandQueue(*context, *device, 0, NULL);
@@ -25,10 +24,9 @@ void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
 
     // Set arguments for the kernel
     clSetKernelArg(kernel, 0, sizeof(cl_int), (void *) &filterWidth);
-    clSetKernelArg(kernel, 1, sizeof(cl_int), (void *) &halfFilterSize);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &d_filter);
-    clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *) &d_input_image);
-    clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &d_output_image);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &d_filter);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &d_input_image);
+    clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *) &d_output_image);
 
     // Set local and global workgroups sizes
     size_t local_work_size[2] = {LOCAL_SIZE, LOCAL_SIZE};
@@ -41,7 +39,7 @@ void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
     clEnqueueReadBuffer(command_queue, d_output_image, CL_TRUE, 0, image_size, (void *) outputImage, 0,
                         NULL, NULL);
 
-    // release opencl object
+    // Release opencl object
     clReleaseCommandQueue(command_queue);
     clReleaseMemObject(d_filter);
     clReleaseMemObject(d_input_image);
