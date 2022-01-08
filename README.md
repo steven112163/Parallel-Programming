@@ -14,11 +14,12 @@
 
 
 ## 📚 Homeworks 
-| HW  | Description  |
-|-----|--------------|
-| HW1 | SIMD         |
-| HW2 | Multi-thread |
-| HW3 | OpenMP       |
-| HW4 | MPI          |
-| HW5 | CUDA         |
-| HW6 | OpenCL       |
+| HW      | Description                                                                     |
+|---------|---------------------------------------------------------------------------------|
+| HW1     | SIMD                                                                            |
+| HW2     | Multi-thread                                                                    |
+| HW3     | OpenMP                                                                          |
+| HW4     | MPI                                                                             |
+| HW5     | CUDA                                                                            |
+| HW6     | OpenCL                                                                          |
+| Project | [Ripple Simulation Based on OpenGL](https://github.com/steven112163/PP-project) |
